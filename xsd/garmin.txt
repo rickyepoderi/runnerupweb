@@ -1,0 +1,2 @@
+http://www.garmindeveloper.com/schemas/tcx/v2/
+http://www8.garmin.com/xmlschemas/index.jsp

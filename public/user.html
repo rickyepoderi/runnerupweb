@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunnerUpWeb User Page</title>
+    <link rel="stylesheet" href="resources/css/runnerupweb.css">
+    <script src="resources/js/jquery-2.1.4.min.js" type="text/javascript"></script>
+    <script src="resources/js/URI.js" type="text/javascript"></script>
+    <script src="resources/js/runnerupweb.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        
+      var opts;
+      var loggedUser;
+      var user;
+      var operation;
+      var login;
+      
+      function onLoad() {
+          var uri = new URI($(location).attr('href')).search(true);
+          operation = (uri.op)? uri.op : "update";
+          login = (uri.login)? uri.login : "";
+          new UserOption(createUserForm);
+      }
+      
+      function createUserForm(userOptions) {
+          // create the user options to render the page
+          opts = userOptions;
+          opts.setBackgroundImage();
+          // read the user information to display
+          loggedUser = new UserInfo("", true, null);
+          user = new UserInfo(login, operation === 'update', fillUserInfo);
+          if (operation === 'create') {
+              $('#title').html('New user');
+              $('#deleteButton').remove();
+          }
+      }
+      
+      function fillUserInfo(u) {
+          user = u;
+          $('#title').html('User ' + user.info.login);
+          if (loggedUser.info.login === user.info.login) {
+              $('#deleteButton').remove();
+          }
+          $('#login').val(user.info.login);
+          if (operation === 'update') {
+              $('#login').prop('disabled', true);
+          }
+          $('#firstname').val(user.info.firstname);
+          $('#lastname').val(user.info.lastname);
+          $('#email').val(user.info.email);
+          $('#role').val(user.info.role);
+          if (loggedUser.info.role !== 'ADMIN') {
+              $('#role').prop("disabled", true);
+          }
+      }
+      
+      function goIndex() {
+          $(location).attr('href', 'index.html');
+      }
+      
+      function goUsers() {
+          $(location).attr('href', 'users.html');
+      }
+      
+      function doSave() {
+          if (operation === 'create') {
+              doCreate();
+          } else {
+              doUpdate();
+          }
+      }
+      
+      function checkInputs() {
+          // validate inputs
+          var inputs = $('#form').find(':input');
+          for (var i = 0; i < inputs.length; i++) {
+              var input = inputs[i];
+              if ($(input).is(":invalid")) {
+                  message('The entry ' + $(input).attr('id') + ' is incorrectly set.', 'error');
+                  $(input).focus();
+                  return;
+              }
+          }
+      }
+      
+      function fillUserFronInputs() {
+          var newUser = new UserInfo(false, null);
+          // fill the new user with the combo information
+          newUser.info = {};
+          newUser.info.login = $('#login').val()? $('#login').val():null;
+          newUser.info.password = $('#password').val()? $('#password').val():null;
+          newUser.info.confirmPassword = $('#confirmPassword').val()? $('#confirmPassword').val():null;
+          newUser.info.firstname = $('#firstname').val()? $('#firstname').val():null;
+          newUser.info.lastname = $('#lastname').val()? $('#lastname').val():null;
+          newUser.info.email = $('#email').val()? $('#email').val():null;
+          newUser.info.role = $('#role').val()? $('#role').val():null;
+          return newUser;
+      }
+      
+      function confirmDelete() {
+          var select = new SelectDisplay();
+          select.confirm("Are you sure you want to delete user " + user.info.login + "?", doDelete, null);
+      }
+      
+      function doDelete() {
+          if (loggedUser.info.login !== user.info.login) {
+              user.delete(goUsers);
+          } else {
+              message('Cannot delete your own user', 'error');
+          }
+      }
+      
+      function doCreate() {
+          checkInputs();
+          var newUser = fillUserFronInputs();
+          if (!newUser.info.login) {
+              message('Login should be provided', 'error');
+              $('#login').focus();
+          } else if (!newUser.info.password) {
+              message('Password should be provided', 'error');
+              $('#login').focus();
+          } else if (!newUser.info.confirmPassword) {
+              message('Confirm password should be provided', 'error');
+              $('#login').focus();
+          } else if (newUser.info.password !== newUser.info.confirmPassword) {
+              message('Passwords are different', 'error');
+              $('#password').focus();
+          } else {
+              delete newUser.info.confirmPassword;
+              newUser.save(goUsers);
+          }
+      }
+      
+      function doUpdate() {
+          checkInputs();
+          var newUser = fillUserFronInputs();
+          // if password modified check they are equal
+          if ((newUser.info.password || newUser.info.confirmPassword) && 
+                  newUser.info.password !== newUser.info.confirmPassword) {
+              message('Passwords are different', 'error');
+              $('#password').focus();
+          } else if (!newUser.info.password && !newUser.info.confirmPassword &&
+                  newUser.info.firstname === user.info.firstname &&
+                  newUser.info.lastname === user.info.lastname &
+                  newUser.info.email === user.info.email &&
+                  newUser.info.role === user.info.role) {
+              message('User information has not been modified', 'warning');
+          } else {
+              delete newUser.info.confirmPassword;
+              newUser.save(user.info.login === loggedUser.info.login? goIndex:goUsers);
+          }
+      }
+    </script>
+</head>
+<body onload="onLoad()">
+    <div class="main">
+        <div class="header">
+            <div id="div-menu" class="menu" onclick="showPopupMenu(loggedUser)"></div>
+            <h1 id="title">title</h1>
+        </div>
+        <div class="form">
+            <form id="form">
+                <div>
+                    <label for="login">Login:</label>
+                    <input type="text" id="login" maxlength="64"/>
+                </div>
+                <div>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" />
+                </div>
+                <div>
+                    <label for="confirmPassword">Confirm password:</label>
+                    <input type="password" id="confirmPassword" />
+                </div>
+                <div>
+                    <label for="firstname">Firstname:</label>
+                    <input type="text" id="firstname" maxlength="100"/>
+                </div>
+                <div>
+                    <label for="lastname">Lastname:</label>
+                    <input type="text" id="lastname" maxlength="100"/>
+                </div>
+                <div>
+                    <label for="email">E-mail:</label>
+                    <input type="email" id="email" maxlength="100"/>
+                </div>
+                <div>
+                    <label for="email">Role:</label>
+                    <select id="role">
+                        <option value="USER">User</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+
+                <p class="submit">
+                    <input id="deleteButton" type="button" value="Delete" onclick="confirmDelete()"/>
+                    <input type="button" value="Save" onclick="doSave()"/>
+                </p>
+            </form>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,61 @@
+All the synchronizers in runnerup are in:
+
+app/src/org/runnerup/export
+
+I'm trying for now to emulate digifit cos it seems to be simple:
+
+DigifitSynchronizer.java
+
+
+** MAIN TO DO:
+
+URL:               http://my.digifit.com
+CONNECT:           http://my.digifit.com/site/authenticate
+UPLOAD:            http://my.digifit.com/rpc/json/workout/import_workouts_url
+
+** EXTRAS:
+
+WORKOUT DOWNLOAD:  http://my.digifit.com/rpc/json/workout/export_workouts_list
+
+It's needed to return the following:
+{
+  "response": {
+    "upload_list": [
+      "file_name": <filename>,    <=== name of the file
+      "id": <id>
+    }
+}
+
+
+WORKOUT LIST:      http://my.digifit.com/rpc/json/workout/list
+WORKOUT DELETE:    http://my.digifit.com/rpc/json/userfile/delete_workout?file_id=<FILE_ID>
+DOWNLOAD ACTIVITY: http://my.digifit.com/rpc/json/workout/export_web?id=<key>&format=tcx000000
+
+
+http://my.digifit.com/site/authenticate
+
+HTTP/1.1 200 OK
+Cache-Control: no-cache
+Content-Type: text/xml; charset=utf-8
+Content-Encoding: gzip
+Vary: Accept-Encoding
+Date: Sun, 20 Sep 2015 11:52:24 GMT
+Server: Google Frontend
+Content-Length: 125
+
+<response>
+  <error code="1001" message="Error occurred: TypeError('get() takes exactly 3 arguments (2 given)',)" />
+</response>
+
+
+Ejemplo de web: (sports-tracker)
+http://www.allaboutsymbian.com/news/item/11942_Sports_Tracker_online_services.php
+
+OpenStreetMap: url for tiles:
+http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+
+
+Images:
+https://pixabay.com/en/runner-sports-power-man-start-761262/
+https://pixabay.com/en/runners-silhouettes-athletes-635906/
+https://pixabay.com/en/running-runner-long-distance-573762/

@@ -1,0 +1,126 @@
+[2016-04-23 11:48:35.691313] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:217 parse starting...
+[2016-04-23 11:48:39.048932] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:217 parse starting...
+[2016-04-23 11:51:10.601159] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:217 parse starting...
+[2016-04-23 11:51:10.601450] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:196 parseTrainingCenterDatabase starting...
+[2016-04-23 11:51:10.601528] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:172 parseActivities starting...
+[2016-04-23 11:51:10.601609] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:139 parseActivity starting...
+[2016-04-23 11:51:10.601720] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:96 parseLap starting...
+[2016-04-23 11:51:10.601926] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:122 going next Track
+[2016-04-23 11:51:10.606442] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:126 return ldap...
+    0: runnerupweb\data\ActivityLap::__set_state(array(
+         'totalTimeSeconds' => 879,
+         'distanceMeters' => 1611,
+         'maximumSpeed' => NULL,
+         'calories' => 0,
+         'averageHeartRateBpm' => 82,
+         'maximumHeartRateBpm' => 93,
+         'cadence' => NULL,
+         'intensity' => 'Active',
+         'triggerMethod' => 'Manual',
+         'startTime' => DateTime::__set_state(array(
+             'date' => '2015-09-19 18:25:26.000000',
+             'timezone_type' => 3,
+             'timezone' => 'UTC',
+        )),
+    ))
+[2016-04-23 11:51:10.606623] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:96 parseLap starting...
+[2016-04-23 11:51:10.606775] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:122 going next Track
+[2016-04-23 11:51:10.611058] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:126 return ldap...
+    0: runnerupweb\data\ActivityLap::__set_state(array(
+         'totalTimeSeconds' => 849,
+         'distanceMeters' => 1609,
+         'maximumSpeed' => NULL,
+         'calories' => 0,
+         'averageHeartRateBpm' => 87,
+         'maximumHeartRateBpm' => 99,
+         'cadence' => NULL,
+         'intensity' => 'Active',
+         'triggerMethod' => 'Manual',
+         'startTime' => DateTime::__set_state(array(
+             'date' => '2015-09-19 18:40:19.000000',
+             'timezone_type' => 3,
+             'timezone' => 'UTC',
+        )),
+    ))
+[2016-04-23 11:51:10.611175] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:96 parseLap starting...
+[2016-04-23 11:51:10.611310] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:122 going next Track
+[2016-04-23 11:51:10.612320] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:126 return ldap...
+    0: runnerupweb\data\ActivityLap::__set_state(array(
+         'totalTimeSeconds' => 177,
+         'distanceMeters' => 343,
+         'maximumSpeed' => NULL,
+         'calories' => 0,
+         'averageHeartRateBpm' => 83,
+         'maximumHeartRateBpm' => 92,
+         'cadence' => NULL,
+         'intensity' => 'Active',
+         'triggerMethod' => 'Manual',
+         'startTime' => DateTime::__set_state(array(
+             'date' => '2015-09-19 18:54:58.000000',
+             'timezone_type' => 3,
+             'timezone' => 'UTC',
+        )),
+    ))
+[2016-04-23 11:51:10.702403] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:217 parse starting...
+[2016-04-23 11:51:10.702563] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:196 parseTrainingCenterDatabase starting...
+[2016-04-23 11:51:10.702621] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:172 parseActivities starting...
+[2016-04-23 11:51:10.702661] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:139 parseActivity starting...
+[2016-04-23 11:51:10.702730] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:96 parseLap starting...
+[2016-04-23 11:51:10.702848] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:122 going next Track
+[2016-04-23 11:51:10.706780] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:126 return ldap...
+    0: runnerupweb\data\ActivityLap::__set_state(array(
+         'totalTimeSeconds' => 879,
+         'distanceMeters' => 1611,
+         'maximumSpeed' => NULL,
+         'calories' => 0,
+         'averageHeartRateBpm' => 82,
+         'maximumHeartRateBpm' => 93,
+         'cadence' => NULL,
+         'intensity' => 'Active',
+         'triggerMethod' => 'Manual',
+         'startTime' => DateTime::__set_state(array(
+             'date' => '2015-09-19 18:25:26.000000',
+             'timezone_type' => 3,
+             'timezone' => 'UTC',
+        )),
+    ))
+[2016-04-23 11:51:10.706912] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:96 parseLap starting...
+[2016-04-23 11:51:10.707010] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:122 going next Track
+[2016-04-23 11:51:10.710887] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:126 return ldap...
+    0: runnerupweb\data\ActivityLap::__set_state(array(
+         'totalTimeSeconds' => 849,
+         'distanceMeters' => 1609,
+         'maximumSpeed' => NULL,
+         'calories' => 0,
+         'averageHeartRateBpm' => 87,
+         'maximumHeartRateBpm' => 99,
+         'cadence' => NULL,
+         'intensity' => 'Active',
+         'triggerMethod' => 'Manual',
+         'startTime' => DateTime::__set_state(array(
+             'date' => '2015-09-19 18:40:19.000000',
+             'timezone_type' => 3,
+             'timezone' => 'UTC',
+        )),
+    ))
+[2016-04-23 11:51:10.710997] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:96 parseLap starting...
+[2016-04-23 11:51:10.711103] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:122 going next Track
+[2016-04-23 11:51:10.711910] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:126 return ldap...
+    0: runnerupweb\data\ActivityLap::__set_state(array(
+         'totalTimeSeconds' => 177,
+         'distanceMeters' => 343,
+         'maximumSpeed' => NULL,
+         'calories' => 0,
+         'averageHeartRateBpm' => 83,
+         'maximumHeartRateBpm' => 92,
+         'cadence' => NULL,
+         'intensity' => 'Active',
+         'triggerMethod' => 'Manual',
+         'startTime' => DateTime::__set_state(array(
+             'date' => '2015-09-19 18:54:58.000000',
+             'timezone_type' => 3,
+             'timezone' => 'UTC',
+        )),
+    ))
+[2016-04-23 11:52:05.520616] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:217 parse starting...
+[2016-04-23 11:52:09.191904] [debug] /home/ricky/NetBeansProjects/runnerupweb/common/TCXManager.php:217 parse starting...

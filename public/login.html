@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunnerUpWeb Login Page</title>
+    <link rel="stylesheet" href="resources/css/runnerupweb.css">
+    <script src="resources/js/jquery-2.1.4.min.js" type="text/javascript"></script>
+    <script src="resources/js/runnerupweb.js" type="text/javascript"></script>
+    <script type="text/javascript">
+      var backgrounds = [
+        'pedestrian-653729_1280.jpg', 
+        'run-750466_1280.jpg', 
+        'runner-557580_1280.jpg', 
+        'runner-761262_1280.jpg', 
+        'runners-635906_1280.jpg', 
+        'runners-752493_1280.jpg', 
+        'runners-760431_1280.jpg', 
+        'running-573762_1280.jpg'
+      ];
+      var background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+      $('html').css('background', 'url(resources/images/' + background + ') no-repeat center top fixed');
+      $('html').css('-webkit-background-size', 'cover');
+      $('html').css('-moz-background-size', 'cover');
+      $('html').css('-o-background-size', 'cover');
+      $('html').css('background-size', 'cover');
+      var client = new Client('site/authenticate?type=json');
+      
+      
+      function onSuccess(data) {
+          if (data.status === 'SUCCESS') {
+              // load the user info
+              var user = new UserInfo(false, null);
+              user.setInfo(data.response);
+              $(location).attr('href','index.html');
+          } else {
+              message(data.errorMessage, 'error');
+          }
+      }
+      
+      function onError(data) {
+          message(data.statusText + ' (' + data.status + ')', 'error');
+      }
+      
+      function doLogin() {
+          var username = $("#username").val();
+          var password = $("#password").val();
+          if (!username || !password) {
+              message('Please fill username and password fields.', 'error');
+          } else {
+              client.login(username, password, onSuccess, onError);
+          }
+      }
+      
+      function keyPress(event) {
+        if (event.which === 13) {
+            doLogin();
+        }
+      }
+      
+    </script>
+    <body>
+        <div class="container-login">
+            <div class="login">
+	        <img src='resources/images/runnerupweb-white.png'>
+                <input type="text" id="username" name="username" placeholder="username" onkeypress="keyPress(event)" autofocus="autofocus">
+                <input type="password" id="password" name="password" placeholder="password" onkeypress="keyPress(event)">
+                <p class="submit"><input type="button" name="login" value="Login" onclick="doLogin()"></p>
+            </div>
+        </div>
+    </body>
+</html>
