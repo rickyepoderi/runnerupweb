@@ -1,0 +1,41 @@
+{
+  "name": "runnerupweb",
+  "version": "0.1.0",
+  "description": "Server repository for your runnerup activities.",
+  "main": "public/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "./node_modules/.bin/webpack index.js --mode=development"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rickyepoderi/runnerupweb.git"
+  },
+  "author": "ricky",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/rickyepoderi/runnerupweb/issues"
+  },
+  "homepage": "https://github.com/rickyepoderi/runnerupweb#readme",
+  "dependencies": {
+    "dygraphs": "^2.1.0",
+    "html-to-react": "^1.3.4",
+    "jquery": "^3.3.1",
+    "leaflet": "^1.3.4",
+    "react": "^16.7.0",
+    "react-dom": "^16.7.0",
+    "react-intl": "^2.7.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.2.3",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/plugin-proposal-class-properties": "^7.0.0",
+    "babel-loader": "^8.0.4",
+    "webpack": "^4.28.1",
+    "webpack-cli": "^3.1.2"
+  }
+}

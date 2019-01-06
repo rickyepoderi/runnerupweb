@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2016 ricky <https://github.com/rickyepoderi/runnerupweb>
+ * Copyright (c) 2016 <https://github.com/rickyepoderi/runnerupweb>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -94,6 +94,10 @@ class Configuration {
                 $this->config['database']['password'],
                 $this->config['database']['maxrows']);
         UserOptionManager::initUserOptionManager($this->config['database']['url'], 
+                $this->config['database']['username'],
+                $this->config['database']['password'],
+                $this->config['database']['maxrows']);
+        VersionManager::initVersionManager($this->config['database']['url'], 
                 $this->config['database']['username'],
                 $this->config['database']['password'],
                 $this->config['database']['maxrows']);

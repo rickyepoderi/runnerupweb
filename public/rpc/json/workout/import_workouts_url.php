@@ -26,5 +26,5 @@ include_once('../../../../include/header_session.php');
 // for the moment return a fixed URL
 Logging::debug("calling import_workouts_url");
 header("Content-type: application/json");
-echo "{\"response\":{\"upload_url\": {\"URL\": \"http://my.digifit.com/rpc/json/workout/upload.php\"}}}";
+echo "{\"response\":{\"upload_url\": {\"URL\": \"" . $_SERVER['REQUEST_SCHEME'] ."://" . $_SERVER['SERVER_NAME'] . "/rpc/json/workout/upload.php\"}}}";
 

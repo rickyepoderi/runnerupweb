@@ -1,2 +1,8 @@
 nbproject
 store
+vendor
+node_modules
+*/log_*.txt
+package-lock.json
+composer.lock
+public/dist/bundle.js

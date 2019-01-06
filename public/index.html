@@ -1,161 +1,38 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RunnerUpWeb Main Page</title>
-    <link rel="stylesheet" href="resources/css/runnerupweb.css">
-    <script src="resources/js/jquery-2.1.4.min.js" type="text/javascript"></script>
-    <script src="resources/js/runnerupweb.js" type="text/javascript"></script>
-    <script type="text/javascript">
-      var opts;
-      var user;
-      var activityList;
-      var optionsPage = {
-          5: '5',
-          10: '10',
-          20: '20',
-          50: '50',
-          100: '100'
-      };
-      var optionsPeriod = {
-          'week': 'week',
-          'month': 'month',
-          'three-months': 'three months',
-          'six-months': 'six months',
-          'year': 'year'
-      };
-      
-      function onLoad() {
-          new UserOption(createActivityList);
-          user = new UserInfo('', true, null);
-      }
-  
-      function createActivityList(userOptions) {
-          // read or create new activity list to show
-          // opts are created
-          opts = userOptions;
-          opts.setBackgroundImage();
-          if (sessionStorage.getItem("activity-list")) {
-              activityList = new ActivityList(printSearch, opts, JSON.parse(sessionStorage.getItem("activity-list")));
-              activityList.print(0);
-          } else {
-              activityList = new ActivityList(printSearch, opts);
-              activityList.today();
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>RunnerUpWeb</title>
+        <link rel="stylesheet" href="resources/css/runnerupweb.css">
+        <link rel="stylesheet" href="resources/css/leaflet.css" />
+        <link rel="stylesheet" href="resources/css/dygraph.css">
+        <script type="text/javascript">
+            function onLoad() {
+              var script = document.createElement('script');
+              script.src = 'dist/bundle.js';
+              document.getElementsByTagName('head')[0].appendChild(script);
           }
-      }
-      
-      function printSearch(startrow) {
-          var converter = new Converter(opts);
-          for (var i = startrow; i < this.activities.length; i++) {
-              var row = $('<tr>');
-              var style = (((parseInt(i) + 1) % this.page) === 0) ? " class='lastrow'" : "";
-              row.append('<td' + style + '>' + this.activities[i].sport + '</td>');
-              row.append('<td' + style + '>' + converter.getDateTime(this.activities[i].startTime) + '</td>');
-              row.append('<td' + style + '>' + converter.getDistanceUnit(this.activities[i].distanceMeters) + '</td>');
-              row.append('<td' + style + '>' + converter.getTime(this.activities[i].totalTimeSeconds) + '</td>');
-              row.append($('<input>', {'type': 'hidden', 'value': this.activities[i].id}));
-              row.click(function () {
-                  var id = $(this).find("input").attr("value");
-                  if (id) {
-                      $(location).attr('href', 'activity.html?id=' + id);
-                  }
-              });
-              $('#activity-table').find('tbody').append(row);
-          }
-          // update the search data
-          $('#page').html(this.page);
-          $('#period').html(optionsPeriod[this.period]);
-          $('#size').html(this.activities.length);
-          $('#period-name').html(this.periodTime());
-          if (this.moredata) {
-              $('#moredata').html('More Data');
-              $('#moredata').click(this.moreSearch.bind(this));
-              $('#moredata').css( 'cursor', 'pointer' );
-          } else {
-              $('#moredata').html('&nbsp;');
-              $('#moredata').unbind('click');
-              $('#moredata').css( 'cursor', 'default' );
-          }
-      }
-
-      function updatePeriod(key) {
-          $('#activity-table').find('tbody').empty();
-          activityList.setPeriod(key);
-      }
-      
-      function updatePage(key) {
-          $('#activity-table').find('tbody').empty();
-          activityList.setPage(key);
-      }
-      
-      function clearTable() {
-          $('#activity-table').find('tbody').empty();
-      }
-      
-      function showPeriodOptions() {
-          var select = new SelectDisplay();
-          select.show(optionsPeriod, updatePeriod);
-      }
-      
-      function showPageOptions() {
-          var select = new SelectDisplay();
-          select.show(optionsPage, updatePage);
-      }
-      
-      function previous() {
-          clearTable();
-          activityList.previous();
-      }
-      
-      function next() {
-          clearTable();
-          activityList.next();
-      }
-      
-      function today() {
-          clearTable();
-          activityList.today();
-      }
-      
-    </script>
-</head>
-<body onload="onLoad()">
-    <div class="main">
-        <div class="header">
-            <div id="div-menu" class="menu" onclick="showPopupMenu(user)"></div>
-            <h1 id="period-name">title</h1>
-            <p class="left">
-                Displaying <span id="size"></span> activities for period
-                <a id='period' href='javascript:void(0)' onclick="showPeriodOptions()">period</a>
-                and page size
-                <a id='page' href='javascript:void(0)' onclick="showPageOptions()">page</a>
-            </p>
-            <p class="right">
-                <a href="javascript:void(0)" onclick="previous()">
-                    <img src="resources/open-iconic/svg-white/media-skip-backward.svg" alt="previous period" title="previous period">
-                </a>
-                <a href="javascript:void(0)" onclick="today()">
-                    <img src="resources/open-iconic/svg-white/media-record.svg" alt="today" title="today">
-                </a>
-                <a href="javascript:void(0)" onclick="next()">
-                    <img src="resources/open-iconic/svg-white/media-skip-forward.svg" alt="next period" title="next period">
-                </a>
-            </p>
+        </script>
+    </head>
+    <body onLoad="onLoad()">
+        <div id="root" class="root"></div>
+        <div id="preload-loading"class="preload"> 
+        <div class="sk-fading-circle">
+          <div class="sk-circle"></div>
+          <div class="sk-circle2 sk-circle"></div>
+          <div class="sk-circle3 sk-circle"></div>
+          <div class="sk-circle4 sk-circle"></div>
+          <div class="sk-circle5 sk-circle"></div>
+          <div class="sk-circle6 sk-circle"></div>
+          <div class="sk-circle7 sk-circle"></div>
+          <div class="sk-circle8 sk-circle"></div>
+          <div class="sk-circle9 sk-circle"></div>
+          <div class="sk-circle10 sk-circle"></div>
+          <div class="sk-circle11 sk-circle"></div>
+          <div class="sk-circle12 sk-circle"></div>
         </div>
-        <table id="activity-table">
-            <thead>
-                <tr>
-                    <th>Sport</th>
-                    <th>Date</th>
-                    <th>Distance</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-    <div id="moredata" class="footer">More Data</div>    
-</body>
+        </div>
+    </body>
 </html>
+

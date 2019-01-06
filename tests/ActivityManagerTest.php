@@ -18,24 +18,20 @@
  */
 
 use runnerupweb\common\ActivityManager;
-use runnerupweb\common\Logging;
-use runnerupweb\common\TCXManager;
 use runnerupweb\common\UserManager;
 use runnerupweb\data\User;
-
+use runnerupweb\common\Configuration;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Description of ActivityManagerTest
  *
  * @author ricky
  */
-class ActivityManagerTest extends PHPUnit_Framework_TestCase {
+class ActivityManagerTest extends TestCase {
     
     public static function setUpBeforeClass() {
-        Logging::initLogger(__DIR__);
-        UserManager::initUserManager('mysql:host=localhost;dbname=runnerupweb;charset=utf8', 'runnerupweb', 'runnerupweb', 100);
-        ActivityManager::initActivityManager('mysql:host=localhost;dbname=runnerupweb;charset=utf8', 'runnerupweb', 'runnerupweb', 100);
-        TCXManager::initTCXManager("/tmp", 100, false);
+        Configuration::getConfiguration();
     }
 
     public static function tearDownAfterClass() {

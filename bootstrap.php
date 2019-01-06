@@ -27,8 +27,10 @@ require_once __DIR__ . '/common/UserManager.php';
 require_once __DIR__ . '/common/ActivityManager.php';
 require_once __DIR__ . '/common/TCXManager.php';
 require_once __DIR__ . '/common/UserOptionManager.php';
+require_once __DIR__ . '/common/VersionManager.php';
 require_once __DIR__ . '/common/Configuration.php';
 require_once __DIR__ . '/common/WebUtils.php';
+require_once __DIR__ . '/common/Client.php';
 
 // data
 require_once __DIR__ . '/data/Activity.php';

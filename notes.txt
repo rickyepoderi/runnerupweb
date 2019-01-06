@@ -59,3 +59,39 @@ Images:
 https://pixabay.com/en/runner-sports-power-man-start-761262/
 https://pixabay.com/en/runners-silhouettes-athletes-635906/
 https://pixabay.com/en/running-runner-long-distance-573762/
+https://pixabay.com/en/run-running-sport-fitness-healthy-750466/
+https://pixabay.com/en/pedestrian-pathway-running-greens-653729/
+https://pixabay.com/en/runners-competition-race-running-760431/
+https://pixabay.com/en/runner-fitness-running-ship-557580/
+https://pixabay.com/en/runners-silhouettes-athletes-752493/
+
+PHP:
+
+composer update
+
+TEST:
+./vendor/bin/phpunit --bootstrap bootstrap.php tests/UserManagerTest
+
+Mysql:
+
+create database runnerupweb CHARACTER SET utf8 COLLATE utf8_general_ci;
+create user 'runnerupweb'@'localhost' IDENTIFIED BY 'runnerupweb';
+grant all on runnerupweb.* to 'runnerupweb'@'localhost';
+
+mysql -u runnerupweb -D runnerupweb -p  < /home/rmartinc/Desktop/runnerupweb.sql
+
+
+Apache configuration:
+
+	DocumentRoot /home/ricky/NetBeansProjects/runnerupweb/public
+
+	<Directory "/home/ricky/NetBeansProjects/runnerupweb/public">
+		Require all granted
+	</Directory>
+
+	<IfModule mod_rewrite.c>
+		RewriteEngine on
+		RewriteRule /site/authenticate /site/authenticate.php
+		RewriteRule /rpc/json/workout/import_workouts_url /rpc/json/workout/import_workouts_url.php
+	</ifModule>
+

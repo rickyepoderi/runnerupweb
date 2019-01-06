@@ -22,13 +22,14 @@ require_once __DIR__ . '/../data/Activity.php';
 require_once __DIR__ . '/../data/ActivityLap.php';
 
 use runnerupweb\common\TCXManager;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Description of LoggingTest
  *
  * @author ricky
  */
-class TCXManagerTest extends PHPUnit_Framework_TestCase {
+class TCXManagerTest extends TestCase {
 
     public static function setUpBeforeClass() {
         TCXManager::initTCXManager("/tmp", 100, false);

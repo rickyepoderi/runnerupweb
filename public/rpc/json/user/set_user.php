@@ -35,7 +35,7 @@ try {
     $um = UserManager::getUserManager();
     if (!$newUser->checkUser(false)) {
         // user is not properly filled => error
-         echo json_encode(LoginResponse::responseKo(1, "User is not properly filled"), JSON_PRETTY_PRINT);
+         echo json_encode(LoginResponse::responseKo(1, "runnerupweb.user.not.properly.filled"), JSON_PRETTY_PRINT);
     } else {
         $oldUser = $um->getUser($newUser->getLogin());
         if ($oldUser) {
@@ -43,7 +43,7 @@ try {
             if ($newUser->getLogin() === $user->getLogin()) {
                 // user trying to change himself
                 if ($newUser->getRole() === 'ADMIN' && $oldUser->getRole() !== 'ADMIN' && $user->getRole()!== 'ADMIN') {
-                    echo json_encode(LoginResponse::responseKo(2, "Non ADMIN user trying to change role to ADMIN"), JSON_PRETTY_PRINT);
+                    echo json_encode(LoginResponse::responseKo(2, "runnerupweb.nonadmin.change.role"), JSON_PRETTY_PRINT);
                 } else {
                     $um->updateUser($newUser);
                     Logging::debug("User modified by himself", [$user]);
@@ -55,7 +55,7 @@ try {
                 Logging::debug("User modified by an admin", [$user]);
                 echo json_encode(LoginResponse::responseOk(), JSON_PRETTY_PRINT);
             } else {
-                echo json_encode(LoginResponse::responseKo(3, "Non ADMIN user trying to modify another user"), JSON_PRETTY_PRINT);
+                echo json_encode(LoginResponse::responseKo(3, "runnerupweb.nonadmin.change.another.user"), JSON_PRETTY_PRINT);
             }
         } else {
             // it is a creation
@@ -66,11 +66,11 @@ try {
                     Logging::debug("User created", [$user]);
                     echo json_encode(LoginResponse::responseOk(), JSON_PRETTY_PRINT);
                 } else {
-                    echo json_encode(LoginResponse::responseKo(4, "User is not properly filled for creation"), JSON_PRETTY_PRINT);
+                    echo json_encode(LoginResponse::responseKo(4, "runnerupweb.user.not.properly.filled.creation"), JSON_PRETTY_PRINT);
                 }
             } else {
                 // not allowed
-                echo json_encode(LoginResponse::responseKo(5, "Non ADMIN user trying to create a user"), JSON_PRETTY_PRINT);
+                echo json_encode(LoginResponse::responseKo(5, "runnerupweb.nonadmin.create.user"), JSON_PRETTY_PRINT);
             }
         }
     }

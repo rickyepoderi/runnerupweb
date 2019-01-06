@@ -19,18 +19,18 @@
 
 use runnerupweb\data\User;
 use runnerupweb\common\UserManager;
-use runnerupweb\common\Logging;
+use runnerupweb\common\Configuration;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Description of DataBaseTest
  *
  * @author ricky
  */
-class DataBaseTest extends PHPUnit_Framework_TestCase {
+class UserManagerTest extends TestCase {
     
     public static function setUpBeforeClass() {
-        Logging::initLogger(__DIR__);
-        UserManager::initUserManager('mysql:host=localhost;dbname=runnerupweb;charset=utf8', 'runnerupweb', 'runnerupweb', 100);
+        Configuration::getConfiguration();
     }
 
     public static function tearDownAfterClass() {

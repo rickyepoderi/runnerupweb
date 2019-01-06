@@ -90,8 +90,6 @@ class ActivityManager extends DataBase {
         $stmt = $db->prepare("INSERT INTO activity(login, startTime, sport, totalTimeSeconds, distanceMeters, "
                 . "maximumSpeed, calories, averageHeartRateBpm, maximumHeartRateBpm, notes, filename) "
                 . "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-Logging::debug("getAverageHeartRateBpm: " . $activity->getAverageHeartRateBpm());
-Logging::debug("getMaximumHeartRateBpm: " . $activity->getMaximumHeartRateBpm());
         $stmt->execute([$username, date('Y-m-d H:i:s', $activity->getStartTime()->getTimestamp()),
             $activity->getSport(), $activity->getTotalTimeSeconds(), $activity->getDistanceMeters(),
             $activity->getMaximumSpeed(), $activity->getCalories(), $activity->getAverageHeartRateBpm(),
@@ -205,6 +203,7 @@ Logging::debug("getMaximumHeartRateBpm: " . $activity->getMaximumHeartRateBpm())
             $db->commit();
             return $stmt->rowCount() === 1;
         } catch (Exception $ex) {
+            Logging::error("Error deleting activity", array($ex));
             $db->rollback();
             throw $ex;
         }
@@ -229,6 +228,7 @@ Logging::debug("getMaximumHeartRateBpm: " . $activity->getMaximumHeartRateBpm())
             $db->commit();
             return $stmt->rowCount() === 1;
         } catch (Exception $ex) {
+            Logging::error("Error deleting activity", array($ex));
             $db->rollback();
             throw $ex;
         }

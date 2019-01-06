@@ -40,9 +40,9 @@ try {
         echo json_encode(LoginResponse::responseOk(), JSON_PRETTY_PRINT);
     } else {
         Logging::error("The options are not valid", [$opts]);
-        echo json_encode(LoginResponse::responseKo(1, "The options are not valid"), JSON_PRETTY_PRINT);
+        echo json_encode(LoginResponse::responseKo(1, "runnerupweb.options.are.not.valid"), JSON_PRETTY_PRINT);
     }
 } catch (Exception $ex) {
     Logging::error("Error performing the search", array($ex));
-    echo json_encode(LoginResponse::responseKo(2, "Internal server error"), JSON_PRETTY_PRINT);
+    echo json_encode(LoginResponse::responseKo(2, $ex->getMessage()), JSON_PRETTY_PRINT);
 }

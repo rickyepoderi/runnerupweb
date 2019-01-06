@@ -195,8 +195,14 @@ class Activity implements \JsonSerializable {
                 // try MYSQL format
                 $time = \DateTime::createFromFormat('Y-m-d H:i:s', $startTime, new \DateTimeZone('UTC'));
             }
+            if ($time === false) {
+                // try full format with timezone
+                $time = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $startTime, new \DateTimeZone('UTC'));
+            }
             if ($time !== false) {
                 $this->startTime = $time;
+            } else {
+                Logging::error("Invalid time format $startTime");
             }
         }
     }

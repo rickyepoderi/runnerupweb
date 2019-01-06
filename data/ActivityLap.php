@@ -189,7 +189,20 @@ class ActivityLap {
             $this->startTime = $startTime;
         } else {
             // convert from XML format
-            $this->startTime = \DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $startTime, new \DateTimeZone('UTC'));
+            $time = \DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $startTime, new \DateTimeZone('UTC'));
+            if ($time === false) {
+                // try MYSQL format
+                $time = \DateTime::createFromFormat('Y-m-d H:i:s', $startTime, new \DateTimeZone('UTC'));
+            }
+            if ($time === false) {
+                // try full format with timezone
+                $time = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $startTime, new \DateTimeZone('UTC'));
+            }
+            if ($time !== false) {
+                $this->startTime = $time;
+            } else {
+                Logging::error("Invalid time format $startTime");
+            }
         }
     }
     

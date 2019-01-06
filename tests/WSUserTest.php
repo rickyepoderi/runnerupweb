@@ -19,30 +19,25 @@
 
 use runnerupweb\data\User;
 use runnerupweb\common\UserManager;
-use runnerupweb\common\Logging;
-use runnerupweb\data\LoginResponse;
-use runnerupweb\data\UserResponse;
 use runnerupweb\data\UserOption;
-use runnerupweb\data\UserOptionResponse;
-use runnerupweb\data\UserSearchResponse;
+use runnerupweb\common\Configuration;
+use runnerupweb\common\Client;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Description of WSUserTest
  *
  * @author ricky
  */
-class WSUserTest extends PHPUnit_Framework_TestCase {
+class WSUserTest extends TestCase {
     
     public static function setUpBeforeClass() {
-        Logging::initLogger(__DIR__);
-        Logging::initLogger(__DIR__);
-        $um = UserManager::initUserManager('mysql:host=localhost;dbname=runnerupweb;charset=utf8', 'runnerupweb', 'runnerupweb', 100);
+        Configuration::getConfiguration();
+        $um = UserManager::getUserManager();
         $um->createUser(WSUserTest::createAdminUser());
     }
 
     public static function tearDownAfterClass() {
-        // delete the cookies file and the admion user created
-        system("rm " . __DIR__ . '/cookies.txt');
         $um = UserManager::getUserManager();
         $um->deleteUser(WSUserTest::createAdminUser()->getLogin());
     }
@@ -68,9 +63,9 @@ class WSUserTest extends PHPUnit_Framework_TestCase {
     
     static private function createUserOptions() {
         $opts = new UserOption();
-        $opts->set("activity.calculation.period", "25");
+        $opts->set("preferred.activity-list.page-size", "50");
         $opts->set("preferred.unit.altitude", "km");
-        $opts->set("activity.graphic.altitude.minimum", "100");
+        $opts->set("activity.map.tilelayer", "opencyclemap");
         return $opts;
     }
     
@@ -87,442 +82,237 @@ class WSUserTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($uo1->flat(), $uo2->flat());
     }
 
-    private function doCookieLogin($user) {
-        $ch = curl_init('http://localhost/site/authenticate.php?type=json');
-        $data = [];
-        $data['login'] = $user->getLogin();
-        $data['password'] = $user->getPassword();
-        $data_string = json_encode($data);
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json',
-            'Content-Length: ' . strlen($data_string))
-        );
-        $result = curl_exec($ch);
-        $this->assertEquals(200, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        $response = LoginResponse::responseWithJson($result);
-        $this->assertTrue($response->isSuccess());
-        if ($response->isSuccess()) {
-            $userres = UserResponse::responseWithJson($result);
-            $this->checkUsers($user, $userres->getUser());
-        }
-        curl_close($ch);
-        return $response;
-    }
-    
-    private function doCookieLogout() {
-        $ch = curl_init('http://localhost/site/logout.php');
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        $this->assertEquals(200, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        $response = LoginResponse::responseWithJson($result);
-        $this->assertTrue($response->isSuccess());
-        curl_close($ch);
-        return $response;
-    }
-    
-    private function doSetUser($user, $logged = true) {
-        $data_string = json_encode($user->jsonSerialize());
-        $ch = curl_init('http://localhost/rpc/json/user/set_user.php');
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json',
-            'Content-Length: ' . strlen($data_string))
-        );
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = LoginResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
-    private function doGetUser(User $user, $logged = true) {
-        $ch = curl_init('http://localhost/rpc/json/user/get_user.php?login=' . $user->getLogin());
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = UserResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
-    private function doSetOptions($opts, $logged = true) {
-        $data_string = json_encode($opts->jsonSerialize());
-        $ch = curl_init('http://localhost/rpc/json/user/set_options.php');
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json',
-            'Content-Length: ' . strlen($data_string))
-        );
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = LoginResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
-    private function doGetOptions($logged = true) {
-        $ch = curl_init('http://localhost/rpc/json/user/get_options.php');
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = UserOptionResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
-    private function doGetOptionDefinitions($logged = true) {
-        $ch = curl_init('http://localhost/rpc/json/user/get_option_definitions.php');
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = UserOptionResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
-    private function doSearch($op, $login, $firstname, $lastname, $email, $offset = null, $limit = null, $logged = true) {
-        $url = 'http://localhost/rpc/json/user/search.php?';
-        if ($op) {
-            $url = $url . 'op=' . $op . '&';
-        }
-        if ($login) {
-            $url = $url . 'login=' . $login . '&';
-        }
-        if ($firstname) {
-            $url = $url . 'firstname=' . $firstname . '&';
-        }
-        if ($lastname) {
-            $url = $url . 'lastname=' . $lastname . '&';
-        }
-        if ($email) {
-            $url = $url . 'email=' . $email . '&';
-        }
-        if ($offset) {
-            $url = $url . 'offset=' . $offset . '&';
-        }
-        if ($limit) {
-            $url = $url . 'limit=' . $limit . '&';
-        }
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = UserSearchResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
-    private function doDelete($login, $logged = true) {
-        $ch = curl_init('http://localhost/rpc/json/user/delete_user.php?login=' . $login);
-        curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookies.txt');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        $this->assertEquals($logged? 200 : 403, curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        curl_close($ch);
-        if ($logged) {
-            $response = LoginResponse::responseWithJson($result);
-            return $response;
-        } else {
-            return null;
-        }
-    }
-    
     public function test403() {
         $admin = $this->createAdminUser();
         $opts = $this->createUserOptions();
-        $this->doSetUser($admin, false);
-        $this->doGetUser($admin, false);
-        $this->doSetOptions($opts, false);
-        $this->doGetOptions(false);
-        $this->doGetOptionDefinitions(false);
-        $this->doSearch(null, null, null, null, null, null, null, false);
-        $this->doDelete($admin->getLogin(), false);
+        $c = new Client('http://localhost/runnerupweb');
+        try {$c->setUser($admin);} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->getUser($admin->getLogin());} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->setUserOptions($opts);} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->getUserOptions();} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->getOptionDefinitions();} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->searchUsers(null, null, null, null, null, null, null);} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->deleteUser($admin->getLogin());} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
     }
     
-    /**
-     * @depends test403
-     */
-    public function testCreateOk() {
+    public function testCreateOK() {
         $admin = $this->createAdminUser();
         $user = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // check error creating a bad filled user
         $user->setPassword(null);
-        $r1 = $this->doSetUser($user);
+        $r1 = $c->setUser($user);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(4, $r1->getErrorCode());
         // create the user ok
         $user->setPassword($this->createUser()->getPassword());
-        $r2 = $this->doSetUser($user);
+        $r2 = $c->setUser($user);
         $this->assertTrue($r2->isSuccess());
+        // check the user
+        $r3 = $c->getUser($user->getLogin());
+        $this->assertTrue($r3->isSuccess());
+        $this->checkUsers($user, $r3->getUser());
+        // delete the user => do not delete for the rest of tests
+        //$r4 = $c->deleteUser($user->getLogin());
+        //$this->assertTrue($r3->isSuccess());
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    
-    /**
-     * @depends testCreateOk
-     */
     public function testAdmin403() {
         $admin = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // check non admin methods
-        $this->doSearch(null, null, null, null, null, null, null, false);
-        $this->doDelete($admin->getLogin(), false);
+        try {$c->searchUsers(null, null, null, null, null, null, null);} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
+        try {$c->deleteUser($admin->getLogin());} catch(Exception $e) {$this->assertEquals(403, $e->getCode());}
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testAdmin403
-     */
     public function testCreateKONonAdmin() {
         $admin = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // create user => error
         $user = $this->createUser("test2");
-        $r1 = $this->doSetUser($user);
+        $r1 = $c->setUser($user);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(5, $r1->getErrorCode());
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testCreateKONonAdmin
-     */
     public function testUpdateUserAdmin() {
         $admin = $this->createAdminUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // check error creating a bad filled user
         $user = $this->createUser();
         $user->setEmail("lalalalalaal");
-        $r1 = $this->doSetUser($user);
+        $r1 = $c->setUser($user);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(1, $r1->getErrorCode());
         // modify the user email
         $user->setEmail("lala@lala.com");
-        $r2 = $this->doSetUser($user);
+        $r2 = $c->setUser($user);
         $this->assertTrue($r2->isSuccess());
         // modify the user password
         $user->setPassword($user->getPassword() . "123");
-        $r3 = $this->doSetUser($user);
+        $r3 = $c->setUser($user);
         $this->assertTrue($r3->isSuccess());
         // check the user
-        $r4 = $this->doGetUser($user);
+        $r4 = $c->getUser($user->getLogin());
         $this->assertTrue($r4->isSuccess());
         $this->checkUsers($user, $r4->getUser());
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testUpdateUserAdmin
-     */
     public function testUpdateUserNonAdmin() {
         $admin = $this->createUser();
         $admin->setPassword($admin->getPassword() . "123");
         $admin->setEmail("lala@lala.com");
-        $this->doCookieLogin($admin);
+        $c = new Client('http://localhost/runnerupweb');
+        $c->login($admin->getLogin(), $admin->getPassword());
         // try to modify the admin user
         $u1 = $this->createAdminUser();
         $u1->setEmail("lala@lala.com");
-        $r1 = $this->doSetUser($u1);
+        $r1 = $c->setUser($u1);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(3, $r1->getErrorCode());
         // try to modify my role to admin
         $u2 = $this->createUser();
         $u2->setRole(User::ADMIN_ROLE);
-        $r2 = $this->doSetUser($u2);
+        $r2 = $c->setUser($u2);
         $this->assertFalse($r2->isSuccess());
         $this->assertEquals(2, $r2->getErrorCode());
         // try to modify myself back to the begining
         $u2->setRole(User::USER_ROLE);
-        $r3 = $this->doSetUser($u2);
+        $r3 = $c->setUser($u2);
         $this->assertTrue($r3->isSuccess());
         // read and check
-        $r4 = $this->doGetUser($u2);
+        $r4 = $c->getUser($u2->getLogin());
         $this->assertTrue($r4->isSuccess());
         $this->checkUsers($u2, $r4->getUser());
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testUpdateUserNonAdmin
-     */
     public function testSetOptions() {
         $admin = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // set some bad properties
         $opts = $this->createUserOptions();
         $opts->set("prop.not.exists", "value");
-        $r1 = $this->doSetOptions($opts);
+        $r1 = $c->setUserOptions($opts);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(1, $r1->getErrorCode());
         // set ok
         $opts->remove("prop.not.exists");
-        $r2 = $this->doSetOptions($opts);
+        $r2 = $c->setUserOptions($opts);
         $this->assertTrue($r2->isSuccess());
         // read and compare
-        $r3 = $this->doGetOptions();
+        $r3 = $c->getUserOptions();
         $this->assertTrue($r3->isSuccess());
         $this->checkUserOptions($opts, $r3->getOptions());
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testSetOptions
-     */
     public function testGetOptionDefinitions() {
         $admin = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // get the definitions
-        $r1 = $this->doGetOptionDefinitions();
+        $r1 = $c->getOptionDefinitions();
         $this->assertTrue($r1->isSuccess());
         $this->assertNotNull($r1->getOptions());
         $this->assertTrue(count($r1->getOptions()->flat()) > 0);
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testGetOptionDefinitions
-     */
     public function testSearch() {
         $admin = $this->createAdminUser();
         $user = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // invalid op
-        $r1 = $this->doSearch("OP_LALA", "lala", null, null, null);
+        $r1 = $c->searchUsers("OP_LALA", "lala", null, null, null);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(1, $r1->getErrorCode());
         // invalid login sent
-        $r2 = $this->doSearch("OP_EQUALS", "lala@lala", null, null, null);
+        $r2 = $c->searchUsers("OP_EQUALS", "lala@lala", null, null, null);
         $this->assertFalse($r2->isSuccess());
         $this->assertEquals(2, $r2->getErrorCode());
         // invalid offset
-        $r3 = $this->doSearch("OP_EQUALS", $user->getLogin(), null, null, null, "-1", null);
+        $r3 = $c->searchUsers("OP_EQUALS", $user->getLogin(), null, null, null, "-1", null);
         $this->assertFalse($r3->isSuccess());
         $this->assertEquals(3, $r3->getErrorCode());
         // invalid limit
-        $r4 = $this->doSearch("OP_EQUALS", $user->getLogin(), null, null, null, "0", "1000000");
+        $r4 = $c->searchUsers("OP_EQUALS", $user->getLogin(), null, null, null, "0", "1000000");
         $this->assertFalse($r4->isSuccess());
         $this->assertEquals(4, $r4->getErrorCode());
         // search by login
-        $r5 = $this->doSearch("OP_EQUALS", $user->getLogin(), null, null, null);
+        $r5 = $c->searchUsers("OP_EQUALS", $user->getLogin(), null, null, null);
         $this->assertTrue($r5->isSuccess());
         $this->assertEquals(1, count($r5->getUsers()));
         $this->checkUsers($user, $r5->getUsers()[0]);
         // search by firstname
-        $r6 = $this->doSearch("OP_ENDS_WITH", null, $user->getFirstname(), null, null);
+        $r6 = $c->searchUsers("OP_ENDS_WITH", null, $user->getFirstname(), null, null);
         $this->assertTrue($r6->isSuccess());
         $this->assertEquals(1, count($r6->getUsers()));
         $this->checkUsers($user, $r6->getUsers()[0]);
         // search by lastname
-        $r7 = $this->doSearch("OP_STARTS_WITH", null, null, $user->getLastname(), null);
+        $r7 = $c->searchUsers("OP_STARTS_WITH", null, null, $user->getLastname(), null);
         $this->assertTrue($r7->isSuccess());
         $this->assertEquals(1, count($r7->getUsers()));
         $this->checkUsers($user, $r7->getUsers()[0]);
         // search by email
-        $r8 = $this->doSearch("OP_CONTAINS", null, null, null, $user->getEmail());
+        $r8 = $c->searchUsers("OP_CONTAINS", null, null, null, $user->getEmail());
         $this->assertTrue($r8->isSuccess());
         $this->assertEquals(1, count($r8->getUsers()));
         $this->checkUsers($user, $r8->getUsers()[0]);
         // search by all
-        $r9 = $this->doSearch("OP_EQUALS", $user->getLogin(), $user->getFirstname(), $user->getLastname(), $user->getEmail());
+        $r9 = $c->searchUsers("OP_EQUALS", $user->getLogin(), $user->getFirstname(), $user->getLastname(), $user->getEmail());
         $this->assertTrue($r9->isSuccess());
         $this->assertEquals(1, count($r9->getUsers()));
         $this->checkUsers($user, $r9->getUsers()[0]);
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
     
-    /**
-     * @depends testSearch
-     */
     public function testDelete() {
         $admin = $this->createAdminUser();
         $user = $this->createUser();
+        $c = new Client('http://localhost/runnerupweb');
         // login
-        $this->doCookieLogin($admin);
+        $c->login($admin->getLogin(), $admin->getPassword());
         // check invalid login
-        $r1 = $this->doDelete(null);
+        $r1 = $c->deleteUser(null);
         $this->assertFalse($r1->isSuccess());
         $this->assertEquals(1, $r1->getErrorCode());
         // check user not exists
-        $r2 = $this->doDelete("thisuserdoesnotexists");
+        $r2 = $c->deleteUser("thisuserdoesnotexists");
         $this->assertFalse($r2->isSuccess());
         $this->assertEquals(2, $r2->getErrorCode());
         // delete the user
-        $r3 = $this->doDelete($user->getLogin());
+        $r3 = $c->deleteUser($user->getLogin());
         $this->assertTrue($r3->isSuccess());
         // get the user and not exists
-        $r4 = $this->doGetUser($user);
+        $r4 = $c->deleteUser($user->getLogin());
         $this->assertFalse($r4->isSuccess());
         $this->assertEquals(2, $r4->getErrorCode());
         // logout
-        $this->doCookieLogout();
+        $c->logout();
     }
 }

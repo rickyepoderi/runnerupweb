@@ -21,6 +21,15 @@ use runnerupweb\common\Logging;
 use \runnerupweb\common\Configuration;
 use \runnerupweb\data\User;
 
+function handleException($ex) {
+    Logging::error("Exceptio caught", array($ex));
+    ob_end_clean(); // try to purge content sent so far
+    header('HTTP/1.1 500 Internal Server Error');
+    echo 'Internal error';
+}
+
+set_exception_handler('handleException');
+
 // add a header protection for everything
 header("Content-Security-Policy: default-src 'self'");
 // init the configuration
@@ -34,6 +43,16 @@ if (session_status() != PHP_SESSION_ACTIVE || !array_key_exists('login', $_SESSI
     header(filter_input(INPUT_SERVER, 'SERVER_PROTOCOL') . ' 403 Forbidden');
     exit;
 } else {
-    // put a variable with the user
-    $user = $_SESSION['login'];
+    // check activity 
+    if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] > $config->getProperty('web', 'session.timeout'))) {
+        Logging::debug("Session expired for " . $_SESSION['login']->getLogin());
+        session_unset();     // unset $_SESSION variable for the run-time 
+        session_destroy();   // destroy session data in storage
+        header(filter_input(INPUT_SERVER, 'SERVER_PROTOCOL') . ' 403 Forbidden');
+        exit;
+    } else {
+        // refresh and put a variable with the user
+        $_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
+        $user = $_SESSION['login'];
+    }
 }

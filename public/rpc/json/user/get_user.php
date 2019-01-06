@@ -46,7 +46,7 @@ try {
     if ($user) {
         echo json_encode(new UserResponse($user), JSON_PRETTY_PRINT);
     } else {
-        echo json_encode(LoginResponse::responseKo(2, "User does not exist"), JSON_PRETTY_PRINT);
+        echo json_encode(LoginResponse::responseKo(2, "runnerupweb.user.does.not.exist"), JSON_PRETTY_PRINT);
     }
 } catch (Exception $ex) {
     Logging::error("Error performing the search", array($ex));

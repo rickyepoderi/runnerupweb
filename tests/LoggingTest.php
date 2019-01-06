@@ -19,13 +19,14 @@
 
 use runnerupweb\common\Logging;
 use Psr\Log\LogLevel;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Description of LoggingTest
  *
  * @author ricky
  */
-class LoggingTest extends PHPUnit_Framework_TestCase {
+class LoggingTest extends TestCase {
     
     private function writeMessages() {
         Logging::debug("debug message");

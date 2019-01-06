@@ -36,6 +36,7 @@ if (ini_get("session.use_cookies")) {
     );
 }
 // Finally, destroy the session.
+session_unset();
 session_destroy();
 // the result is json
 header('Content-type: application/json');

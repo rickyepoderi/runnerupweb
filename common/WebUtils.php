@@ -34,12 +34,14 @@ class WebUtils {
         $stringVar = filter_input(INPUT_GET, $name);
         Logging::debug("Checking $name with $stringVar");
         if (!$stringVar && $compulsory) {
-            exit(json_encode(LoginResponse::responseKo($errorCode, "'$name' parameter is compulsory"), JSON_PRETTY_PRINT));
+            Logging::warning("'$name' parameter is compulsory");
+            exit(json_encode(LoginResponse::responseKo($errorCode, "runnerupweb.date.missing"), JSON_PRETTY_PRINT));
         }
         if ($stringVar) {
             $dateVar = \DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $stringVar, new \DateTimeZone('UTC'));
             if (!$dateVar) {
-                exit(json_encode(LoginResponse::responseKo($errorCode, "'$name' format should be in XML datetime 'Y-m-dTH:i:sZ'"), JSON_PRETTY_PRINT));
+                Logging::warning("'$name' format should be in XML datetime 'Y-m-dTH:i:sZ'");
+                exit(json_encode(LoginResponse::responseKo($errorCode, "runnerupweb.date.invalid"), JSON_PRETTY_PRINT));
             }
             return $dateVar;
         } else {
@@ -80,11 +82,12 @@ class WebUtils {
                 case 'OP_EQUALS':
                     return UserManager::OP_EQUALS;
                 default:
-                    exit(json_encode(LoginResponse::responseKo($errorCode, "'$name' format is not a valid operation"), JSON_PRETTY_PRINT));
+                    exit(json_encode(LoginResponse::responseKo($errorCode, "runnerupweb.invalid.operation"), JSON_PRETTY_PRINT));
             }
         } else {
             if ($compulsory) {
-                exit(json_encode(LoginResponse::responseKo($errorCode, "'$name' parameter is compulsory"), JSON_PRETTY_PRINT));
+                Logging::warning("'$name' parameter is compulsory");
+                exit(json_encode(LoginResponse::responseKo($errorCode, "runnerupweb.operation.missing"), JSON_PRETTY_PRINT));
             } else {
                 return -1;
             }
@@ -115,11 +118,13 @@ class WebUtils {
         $var = filter_input(INPUT_GET, $name, FILTER_VALIDATE_INT, 
                 array("options" => array("min_range" => $min, "max_range" => $max)));
         if ($var === false) {
+            Logging::warning("'$name' should be an integer between $min and $max");
             exit(json_encode(LoginResponse::responseKo($errorCode, 
-                    "'$name' should be an integer between $min and $max"), JSON_PRETTY_PRINT));
+                    "runnerupweb.int.invalid"), JSON_PRETTY_PRINT));
         } else if ($var == null && $compulsory) {
+            Logging::warning("'$name' parameter is compulsory");
             exit(json_encode(LoginResponse::responseKo($errorCode, 
-                    "'$name' parameter is compulsory"), JSON_PRETTY_PRINT));
+                    "runnerupweb.int.missing"), JSON_PRETTY_PRINT));
         } else {
             return $var;
         }
@@ -154,11 +159,13 @@ class WebUtils {
                 array("options" => array("regexp" => $regex)));
         Logging::debug("Return regexp: ", [$var]);
         if ($var === false) {
+            Logging::warning("'$name' does not comply regular expression $regex");
             exit(json_encode(LoginResponse::responseKo($errorCode, 
-                    "'$name' does not comply regular expression $regex"), JSON_PRETTY_PRINT));
+                    "runnerupweb.regexp.invalid"), JSON_PRETTY_PRINT));
         } else if ($var === null && $compulsory) {
+            Logging::warning("'$name' parameter is compulsory");
             exit(json_encode(LoginResponse::responseKo($errorCode, 
-                    "'$name' parameter is compulsory"), JSON_PRETTY_PRINT));
+                    "runnerupweb.regexp.missing"), JSON_PRETTY_PRINT));
         } else {
             return $var;
         }

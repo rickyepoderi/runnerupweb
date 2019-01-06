@@ -28,11 +28,12 @@ use runnerupweb\data\User;
 
 try {
     $config = Configuration::getConfiguration();
-    session_start();
+    // delete the old session gives problem with runnerup
+    //session_start();
     // destroy the current session
-    if (session_status() == PHP_SESSION_ACTIVE) {
-        session_destroy();
-    }
+    //if (session_status() == PHP_SESSION_ACTIVE) {
+    //    session_destroy();
+    //}
     // do the rest
     $request = file_get_contents('php://input');
     $input = json_decode($request);
@@ -40,11 +41,7 @@ try {
     $user = User::userWithJson($request);
     Logging::debug("login info: ", array($user));
     // set the header
-    if (filter_input(INPUT_GET, 'type') === 'json') {
-        header("Content-type: application/json");
-    } else {
-        header("Content-type: application/xml");
-    }
+    header("Content-type: application/json");
     // validate the user and password using the manager
     $res = null;
     if ($user->getLogin() && $user->getPassword()) {
@@ -54,25 +51,22 @@ try {
             // store the user into the session for further requests
             session_start();
             $_SESSION['login'] = $user;
+            $_SESSION['LAST_ACTIVITY'] = time();
             Logging::debug("Login OK!");
             $res = LoginResponse::responseOk();
         } else {
             Logging::debug("Invalid username or password");
-            $res = LoginResponse::responseKo(1102, "Invalid username or password!");
+            $res = LoginResponse::responseKo(1102, "runnerupweb.invalid.username.password");
         }
     } else {
         Logging::debug("Invalid data");
-        $res = LoginResponse::responseKo(1101, "The json data provided is incorrect!");
+        $res = LoginResponse::responseKo(1101, "runnerupweb.invalid.data");
     }
-    if (filter_input(INPUT_GET, 'type') === 'json') {
-        // in case of json => return the user logged in also in the response if ok
-        if ($user && $res->isSuccess()) {
-            echo json_encode(new UserResponse($user), JSON_PRETTY_PRINT);
-        } else {
-            echo json_encode($res->jsonSerialize(), JSON_PRETTY_PRINT);
-        }
+    // in case of json => return the user logged in also in the response if ok
+    if ($user && $res->isSuccess()) {
+        echo json_encode(new UserResponse($user), JSON_PRETTY_PRINT);
     } else {
-        echo $res->toXml();
+        echo json_encode($res->jsonSerialize(), JSON_PRETTY_PRINT);
     }
 } catch (Exception $ex) {
     Logging::error("Error performing the login", array($ex));

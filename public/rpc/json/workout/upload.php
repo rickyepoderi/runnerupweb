@@ -48,7 +48,8 @@ switch ($_FILES['userFiles']['error']) {
 }
 // check is a XML file
 $finfo = new finfo(FILEINFO_MIME_TYPE);
-if ($finfo->file($_FILES['userFiles']['tmp_name']) === 'application/xml') {
+if ($finfo->file($_FILES['userFiles']['tmp_name']) === 'application/xml' ||
+        $finfo->file($_FILES['userFiles']['tmp_name']) === 'text/xml') {
     Logging::debug($finfo->file($_FILES['userFiles']['tmp_name']));
     // upload the TCX file into the application for the current user
     $am = ActivityManager::getActivityManager();

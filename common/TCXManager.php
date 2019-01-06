@@ -139,7 +139,12 @@ class TCXManager {
             Logging::debug("parseActivity starting...");
             $activity = new Activity();
             // read the type of activity
-            $activity->setSport($reader->getAttribute('Sport'));
+            if ($reader->getAttribute('Sport')) {
+                $activity->setSport($reader->getAttribute('Sport'));
+            } else {
+                // default to Running
+                $activity->setSport("Running");
+            }
             // read all the inner attributes
             $continue = $reader->read();
             while ($continue) {
@@ -154,7 +159,9 @@ class TCXManager {
                 } else if ($reader->nodeType === \XMLReader::ELEMENT) {
                     // not interested in this value
                     $continue = $reader->next();
+                    $readnext = false;
                 } elseif ($reader->nodeType === \XMLReader::END_ELEMENT && $reader->name === 'Activity') {
+                    Logging::debug("parseActivity finishing...");
                     $activity->calculate();
                     return $activity;
                 }
@@ -431,10 +438,12 @@ class TCXManager {
      */
     public function removeDirectory($path) {
         $files = glob($path . '/*');
-        foreach ($files as $file) {
-            is_dir($file) ? $this->removeDirectory($file) : unlink($file);
+        if (is_dir($path)) {
+            foreach ($files as $file) {
+                is_dir($file) ? $this->removeDirectory($file) : unlink($file);
+            }
+            rmdir($path);
         }
-        rmdir($path);
         return;
     }
 
@@ -458,9 +467,12 @@ class TCXManager {
      */
     public function get($username, $id) {
         $dir = $this->calculateDirectory($username, $id);
-        if (is_readable($dir . "/" . $id . ".tcx")) {
-            return $dir . "/" . $id . ".tcx";
+        $file = $dir . "/" . $id . ".tcx";
+        Logging::debug("Obtainin TCX file " . $dir);
+        if (is_readable($file)) {
+            return $file;
         } else {
+            Logging::warning("File " . $file . " is not readable");
             return null;
         }
     }

@@ -34,5 +34,5 @@ try {
     echo json_encode(new UserOptionResponse($opts), JSON_PRETTY_PRINT);
 } catch (Exception $ex) {
     Logging::error("Error getting the options for the user", ex);
-    echo json_encode(LoginResponse::responseKo(5, "Internal server error"), JSON_PRETTY_PRINT);
+    echo json_encode(LoginResponse::responseKo(5, $ex->getMessage()), JSON_PRETTY_PRINT);
 }

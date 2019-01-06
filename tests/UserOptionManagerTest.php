@@ -19,21 +19,20 @@
 
 use runnerupweb\data\UserOption;
 use runnerupweb\data\User;
-use runnerupweb\common\Logging;
 use runnerupweb\common\UserManager;
 use runnerupweb\common\UserOptionManager;
+use runnerupweb\common\Configuration;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Description of UserOptionManagerTest
  *
  * @author ricky
  */
-class UserOptionManagerTest extends PHPUnit_Framework_TestCase {
+class UserOptionManagerTest extends TestCase {
     
     public static function setUpBeforeClass() {
-        Logging::initLogger(__DIR__);
-        UserManager::initUserManager('mysql:host=localhost;dbname=runnerupweb;charset=utf8', 'runnerupweb', 'runnerupweb', 100);
-        UserOptionManager::initUserOptionManager('mysql:host=localhost;dbname=runnerupweb;charset=utf8', 'runnerupweb', 'runnerupweb', 100);
+        Configuration::getConfiguration();
     }
 
     public static function tearDownAfterClass() {
@@ -145,7 +144,6 @@ class UserOptionManagerTest extends PHPUnit_Framework_TestCase {
         $uom = UserOptionManager::getUserOptionManager();
         $opts = $uom->getDefinitions();
         $this->assertTrue(count($opts->flat()) > 0);
-        $this->assertEquals("<input type='number' step='1' max='120' min='10'/>", $opts->get("activity.calculation.period"));
         $this->assertEquals("<select><option>m</option><option>km</option><option>mile</option></select>", $opts->get("preferred.unit.distance"));
     }
     
@@ -154,7 +152,7 @@ class UserOptionManagerTest extends PHPUnit_Framework_TestCase {
         $opts = new UserOption();
         $opts->set("preferred.unit.distance", "m");
         $opts->set("preferred.unit.altitude", "m");
-        $opts->set("activity.calculation.period", "20");
+        $opts->set("preferred.activity-list.page-size", "20");
         $uom = UserOptionManager::getUserOptionManager();
         $this->assertTrue($uom->check($opts));
         $opts->set("option.not.exist", "val");
