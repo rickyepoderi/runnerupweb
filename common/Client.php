@@ -19,6 +19,9 @@
 
 namespace runnerupweb\common;
 
+use runnerupweb\data\TagConfig;
+use runnerupweb\data\TagConfigResponse;
+use runnerupweb\data\TagListResponse;
 use runnerupweb\data\ActivitySearchResponse;
 use runnerupweb\data\LoginResponse;
 use runnerupweb\data\UserResponse;
@@ -87,7 +90,7 @@ class Client {
      */
     public function logout() {
         $ch = curl_init($this-> baseUrl . '/site/logout.php');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         $result = curl_exec($ch);
@@ -127,7 +130,7 @@ class Client {
      */
     public function getUser($login) {
         $ch = curl_init($this-> baseUrl . '/rpc/json/user/get_user.php?login=' . urlencode($login));
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         $result = curl_exec($ch);
@@ -183,7 +186,7 @@ class Client {
      */
     public function getUserOptions() {
         $ch = curl_init($this-> baseUrl . '/rpc/json/user/get_options.php');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         $result = curl_exec($ch);
@@ -199,7 +202,7 @@ class Client {
      */
     public function getOptionDefinitions() {
         $ch = curl_init($this-> baseUrl . '/rpc/json/user/get_option_definitions.php');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         $result = curl_exec($ch);
@@ -244,7 +247,7 @@ class Client {
             $url = $url . 'limit=' . urlencode($limit) . '&';
         }
         $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         $result = curl_exec($ch);
@@ -282,9 +285,10 @@ class Client {
      * @param string $end
      * @param string $offset
      * @param string $limit
-     * @return runnerupweb\data\ActivitySearchResponse
+     * @param string $tag
+     * @return ActivitySearchResponse
      */
-    public function searchWorkouts($start, $end, $offset = null, $limit = null) {
+    public function searchWorkouts($start, $end, $offset = null, $limit = null, $tag = null): ActivitySearchResponse {
         $url = $this-> baseUrl . '/rpc/json/workout/search.php?';
         if ($start) {
             $url = $url . 'start=' . urlencode($start) . '&';
@@ -298,9 +302,12 @@ class Client {
         if ($limit) {
             $url = $url . 'limit=' . urlencode($limit) . '&';
         }
+        if ($tag) {
+            $url = $url . 'tag=' . urlencode($tag) . '&';
+        }
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
         $this->checkHttpError($ch);
@@ -357,7 +364,7 @@ class Client {
             }
             curl_setopt($ch, CURLOPT_HTTPHEADER, $req_headers);
         }
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
         $result = curl_exec($ch);
@@ -387,6 +394,160 @@ class Client {
         curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = LoginResponse::responseWithJson($result);
+        return $response;
+    }
+
+    /**
+     * Updates or creates a tag config.
+     * @param string $mode
+     * @param TagConfig $tagConfig
+     * @return LoginResponse|null
+     */
+    public function setTagConfig(string $mode, TagConfig $tagConfig): LoginResponse {
+        $data_string = json_encode($tagConfig->jsonSerialize());
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/set_tag_config.php?mode=' . $mode);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($data_string))
+        );
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = LoginResponse::responseWithJson($result);
+        return $response;
+    }
+
+    /**
+     * Gets the tag config.
+     * @param string $tag
+     * @return TagConfig|null
+     */
+    public function getTagConfig(string $tag): TagConfigResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/get_tag_config.php?tag=' . urlencode($tag));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = TagConfigResponse::responseWithJson($result);
+        return $response;
+    }
+
+    /**
+     *
+     * @param string|null $provider
+     * @param int|null $id
+     * @return LoginResponse|null
+     */
+    public function automaticTag(?string $provider, ?int $id): LoginResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/automatic_tag.php?' .
+                (isset($provider)? 'provider=' . urlencode($provider) . '&' : '') .
+                (isset($id)? 'id=' . $id : ''));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        if (isset($provider)) {
+            $response = TagConfigResponse::responseWithJson($result);
+        } else {
+            $val = json_decode($result, true);
+            $response = LoginResponse::responseWithJson($result);
+            $response->setExtra($val['response']);
+        }
+        return $response;
+    }
+
+    /**
+     *
+     * @return TagListResponse
+     */
+    public function listTagConfigs(): TagListResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/list_tag_configs.php');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = TagListResponse::responseWithJson($result);
+        return $response;
+    }
+
+    /**
+     *
+     * @param string $op
+     * @param int $id
+     * @param string $tag
+     * @return LoginResponse
+     */
+    public function manageWorkoutTag(string $op, int $id, string $tag): LoginResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/manage_workout_tag.php?op=' . $op . '&id=' . $id . '&tag=' . urlencode($tag));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = LoginResponse::responseWithJson($result);
+        return $response;
+    }
+
+    /**
+     *
+     * @param int $id
+     * @return TagListResponse
+     */
+    public function listWorkoutTags(int $id): TagListResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/list_workout_tags.php?id=' . $id);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = TagListResponse::responseWithJson($result);
+        return $response;
+    }
+
+    /**
+     *
+     * @param int $id
+     * @param bool $delete
+     * @return LoginResponse
+     */
+    public function calculateAutomaticTags(int $id, bool $delete): LoginResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/calculate_automatic_tags.php?id=' . $id . '&delete=' . $delete);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+        $result = curl_exec($ch);
+        $this->checkHttpError($ch);
+        curl_close($ch);
+        $response = LoginResponse::responseWithJson($result);
+        return $response;
+    }
+
+   /**
+    *
+    * @param string $tag
+    * @return LoginResponse
+    */
+    public function deleteTagConfig(string $tag): LoginResponse {
+        $ch = curl_init($this-> baseUrl . '/rpc/json/workout/delete_tag_config.php?tag=' . urlencode($tag));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
         $result = curl_exec($ch);
         $this->checkHttpError($ch);
         curl_close($ch);

@@ -25,7 +25,7 @@ use runnerupweb\common\UserManager;
 use runnerupweb\common\Logging;
 use runnerupweb\common\WebUtils;
 
-include_once('../../../../include/header_admin.php');
+$user = WebUtils::checkAdminSession('GET');
 
 try {
     $um = UserManager::getUserManager();

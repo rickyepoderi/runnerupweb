@@ -23,12 +23,12 @@ use PHPUnit\Framework\TestCase;
 
 class VersionManagerTest extends TestCase {
     
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         // initialize configration
         Configuration::getConfiguration();
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         // noop
     }
     
@@ -43,14 +43,14 @@ class VersionManagerTest extends TestCase {
     
     public function testLastVersion() {
         $vm = VersionManager::getVersionManager();
-        $this->assertEquals("0.1.0", $vm->getLastVersion());
+        $this->assertEquals("0.2.0", $vm->getLastVersion());
     }
     
     public function testInit() {
         $vm = VersionManager::getVersionManager();
         $vm->init();
         $vm = VersionManager::getVersionManager();
-        $this->assertEquals("0.1.0", $vm->getVersion());
+        $this->assertEquals("0.2.0", $vm->getVersion());
     }
 }
 

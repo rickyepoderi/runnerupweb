@@ -25,9 +25,7 @@ use runnerupweb\data\UserResponse;
 use runnerupweb\data\LoginResponse;
 use runnerupweb\common\WebUtils;
 
-include_once('../../../../include/header_session.php');
-
-header('Content-type: application/json');
+$user = WebUtils::checkUserSession('GET');
 
 try {
     $um = UserManager::getUserManager();

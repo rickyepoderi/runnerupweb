@@ -30,7 +30,7 @@ class UserResponse extends LoginResponse implements \JsonSerializable {
     
     private $user;
     
-    public function __construct(User $user = null) {
+    public function __construct(?User $user = null) {
         parent::__construct(true);
         $this->user = $user;
     }

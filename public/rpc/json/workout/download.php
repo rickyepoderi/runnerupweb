@@ -21,10 +21,11 @@ require __DIR__ . '/../../../../bootstrap.php';
 
 use runnerupweb\common\Logging;
 use runnerupweb\common\ActivityManager;
+use runnerupweb\common\WebUtils;
 
 // avoid php cache system for this download
 session_cache_limiter('');
-include_once('../../../../include/header_session.php');
+$user = WebUtils::checkUserSession('GET', false);
 
 // the file is downloaded in gzip => if not accepted just a 404
 if (strpos(filter_input(INPUT_SERVER, 'HTTP_ACCEPT_ENCODING'), 'gzip') === false) {

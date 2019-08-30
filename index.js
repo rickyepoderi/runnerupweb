@@ -3,8 +3,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import RunnerUpWeb from './components/RunnerUpWeb';
 import {IntlProvider, addLocaleData} from "react-intl";
-import locale_en from 'react-intl/locale-data/en';
-import locale_es from 'react-intl/locale-data/es';
 import messages_en from "./translations/en.json";
 import messages_es from "./translations/es.json";
 
@@ -39,11 +37,6 @@ function preloadBackgroundImage() {
    }
   });
 }
-
-addLocaleData([ 
-  ...locale_es,
-  ...locale_en
-]);
 
 // default only en languaje but react-intl is used
 const messages = {

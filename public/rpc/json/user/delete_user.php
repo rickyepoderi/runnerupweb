@@ -25,9 +25,7 @@ use runnerupweb\common\ActivityManager;
 use runnerupweb\common\Logging;
 use runnerupweb\common\WebUtils;
 
-include_once('../../../../include/header_admin.php');
-
-header('Content-type: application/json');
+$user = WebUtils::checkAdminSession('POST');
 
 try {
     $um = UserManager::getUserManager();

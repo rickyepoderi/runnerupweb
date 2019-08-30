@@ -113,6 +113,49 @@ class VersionUpdate0_1_0 extends VersionUpdate {
     }
 }
 
+class VersionUpdate0_2_0 extends VersionUpdate {
+
+    function __construct($version) {
+        parent::__construct($version);
+    }
+
+    function applyUpdate($db) {
+        try {
+            // create tag_config table
+            $stmt = $db->prepare("CREATE TABLE tag_config (\n" .
+                "tag varchar(128) NOT NULL,\n" .
+                "login varchar(128) NOT NULL,\n" .
+                "config varchar(2048) DEFAULT NULL,\n" .
+                "provider varchar(128) DEFAULT NULL,\n" .
+                "description varchar(2048) DEFAULT NULL,\n" .
+                "PRIMARY KEY (tag, login),\n" .
+                "KEY tag_config_login_fgk (login),\n" .
+                "CONSTRAINT tag_config_login_fgk FOREIGN KEY (login) REFERENCES user (login) ON DELETE CASCADE)");
+            $stmt->execute();
+            // create tag table
+            $stmt = $db->prepare("CREATE TABLE tag (\n" .
+                "tag varchar(128) NOT NULL,\n" .
+                "id bigint(20) NOT NULL,\n" .
+                "login varchar(128) NOT NULL,\n" .
+                "PRIMARY KEY (tag, id, login),\n" .
+                "KEY tag_activity_fgk (id),\n" .
+                "KEY tag_login_fgk (login),\n" .
+                "CONSTRAINT tag_activity_fgk FOREIGN KEY (id) REFERENCES activity (id) ON DELETE CASCADE,\n" .
+                "CONSTRAINT tag_login_fgk FOREIGN KEY (login) REFERENCES user (login) ON DELETE CASCADE,\n" .
+                "CONSTRAINT tag_tag_config_fgk FOREIGN KEY (tag) REFERENCES tag_config (tag) ON DELETE CASCADE)");
+            $stmt->execute();
+            // upate the version
+            $stmt = $db->prepare("INSERT INTO version(version) values(?)");
+            $stmt->execute([$this->version]);
+            // commit
+            $db->commit();
+        } catch (Exception $ex) {
+            $db->rollback();
+            throw $ex;
+        }
+    }
+}
+
 /**
  * CREATE TABLE version (
  *   version varchar(50) NOT NULL,
@@ -211,9 +254,9 @@ class VersionManager extends DataBase {
      * @param string $version The initial version to upgrade
      */
     private function upgradeFromVersion($version) {
-        $db = $this->getConnection();
         foreach (VersionManager::$versions as $newVersion => $upgrade) {
             if ($this->upgradeNeededForVersions($version, $newVersion)) {
+                $db = $this->getConnection();
                 Logging::info("Upgrading version to $newVersion");
                 $upgrade->applyUpdate($db);
             }
@@ -225,7 +268,7 @@ class VersionManager extends DataBase {
      * @throws Exception Some error
      */
     public function init() {
-        // check if verion table exists
+        // check if version table exists
         try {
             $version = $this->getVersion();
         } catch (\PDOException $ex) {
@@ -253,5 +296,6 @@ class VersionManager extends DataBase {
 
 VersionManager::$versions = array(
   "0.1.0" => new VersionUpdate0_1_0("0.1.0"),
+  "0.2.0" => new VersionUpdate0_2_0("0.2.0"),
   // more version with changes here
 );

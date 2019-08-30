@@ -21,8 +21,9 @@ require __DIR__ . '/../../../../bootstrap.php';
 
 use runnerupweb\common\Logging;
 use runnerupweb\common\ActivityManager;
+use runnerupweb\common\WebUtils;
 
-include_once('../../../../include/header_session.php');
+$user = WebUtils::checkUserSession('POST', false);
 
 Logging::debug("Files: ", $_FILES);
 

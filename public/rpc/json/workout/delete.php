@@ -24,8 +24,7 @@ use runnerupweb\common\ActivityManager;
 use runnerupweb\common\WebUtils;
 use runnerupweb\data\LoginResponse;
 
-include_once('../../../../include/header_session.php');
-
+$user = WebUtils::checkUserSession('POST');
 $id = WebUtils::getCompulsoryInt('id', 1, 1);
 Logging::debug("deleting workout $id for " . $user->getLogin());
 

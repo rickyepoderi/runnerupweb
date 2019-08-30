@@ -48,6 +48,26 @@ input, select, textarea, button {
     box-sizing: border-box;
 }
 
+.header input {
+    border: none;
+    color: white;
+    outline: none;
+    background-color: #004999;
+    width: 130px;
+}
+
+.header input::placeholder {
+    color: white;
+}
+
+.header input:invalid {
+    color: red;
+}
+
+.header input[list]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
 .magnitude-row {
     display: table;
     font-size: 0.8em;
@@ -146,7 +166,7 @@ input, select, textarea, button {
 
 .header h1 {
     margin-top: 0px;
-    margin-bottom: 0px;
+    margin-bottom: 10px;
 }
 
 /* message box at top-left corner */
@@ -347,13 +367,18 @@ input, select, textarea, button {
     width: 16px;
 }
 
-.form input, .form select {
+.form input, .form select, .form textarea {
     width: 300px;
     border-radius: 5px;
     border: 1px solid #999;
     padding: 5px 5px 5px 5px;
     margin-top: 5px;
     margin-left: 5px;
+    background-color: white;
+}
+
+.form textarea {
+    height: 120px;
 }
 
 .form input:invalid, .form select:invalid {
@@ -468,10 +493,16 @@ input, select, textarea, button {
     vertical-align: middle;
 }
 
+.link {
+    cursor: pointer;
+    color: LightSkyBlue;
+}
+
 .right img, .left img {
     height: 1.12em;
-    margin-left: 8px;
+    margin-right: 8px;
     vertical-align: middle;
+    cursor: pointer;
 }
 
 .ldap-icon {
@@ -611,6 +642,49 @@ input, select, textarea, button {
 .sk-fading-circle .sk-circle12:before {
   -webkit-animation-delay: -0.1s;
           animation-delay: -0.1s;
+}
+
+.tag, .tag-short, .tag-auto, .tag-auto-short {
+    display: inline-block;
+    margin: 2px 2px 2px 2px;
+    border-radius: 16px;
+}
+
+.tag, .tag-auto {
+    line-height: 32px;
+    padding: 0 12px;
+}
+
+.tag-short, .tag-auto-short {
+    line-height: 22px;
+    padding: 0 8px;
+}
+
+.tag {
+    background-color: #003366;
+}
+
+.tag-short {
+    background-color: #004999;
+}
+
+.tag-auto, .tag-auto-short {
+    background-color: #ba2d0f;
+}
+
+.tag img, .tag-auto img {
+    cursor: pointer;
+    height: 16px;
+    width: 16px;
+    margin-left: 10px;
+}
+
+.tag-short img, .tag-auto-short img {
+    cursor: pointer;
+    height: 14px;
+    width: 14px;
+    margin-left: 4px;
+    margin-bottom: 2px;
 }
 
 @-webkit-keyframes sk-circleFadeDelay {

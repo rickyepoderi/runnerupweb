@@ -19,6 +19,9 @@
 
 namespace runnerupweb\data;
 
+use runnerupweb\data\ActivityTrackpoint;
+use runnerupweb\common\Logging;
+
 /**
  * The activity lap is the information that is parsed for every lap in the
  * TCX parsing. The lap information is not stored in the ddbb and it is just
@@ -38,9 +41,10 @@ class ActivityLap {
     private $intensity;
     private $triggerMethod;
     private $startTime;
+    private $trackpoints;
     
     function __construct() {
-        // noop
+        $this->trackpoints = [];
     }
     
     
@@ -222,4 +226,20 @@ class ActivityLap {
         $this->triggerMethod = $triggerMethod;
     }
 
+    /**
+     * Adds a new trackpoint
+     * @param Trackpoint $trackpoint
+     * @return void
+     */
+    function add(ActivityTrackpoint $trackpoint): void {
+        array_push($this->trackpoints, $trackpoint);
+    }
+
+    /**
+     * Getter for the trackpoints
+     * @return array ActivityTrackpoint[]
+     */
+    function getTrackpoints(): array {
+        return $this->trackpoints;
+    }
 }

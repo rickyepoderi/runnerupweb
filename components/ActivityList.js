@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2019 <https://github.com/rickyepoderi/runnerupweb>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import $ from "jquery";
 import React from 'react';
 import Activity from './Activity';
@@ -8,16 +25,21 @@ import {FormattedMessage, FormattedHTMLMessage} from 'react-intl';
 export default class ActivityList extends React.Component {
   constructor(props) {
     super(props);
-    var [start, end] = this.initialDates(this.props.app.getOptions().getPreferredActivityListPeriod());
-    this.state = {
-      start: start,
-      end: end,
-      activities: new ActivityArray(),
-      selected: null,
-      period: this.props.app.getOptions().getPreferredActivityListPeriod(),
-      page: this.props.app.getOptions().getPreferredActivityListPageSize(),
-      moredata: true
-    };
+    if (props.app.getActivityListState()) {
+      this.state = Object.assign({}, props.app.getActivityListState());
+    } else {
+      var [start, end] = this.initialDates(this.props.app.getOptions().getPreferredActivityListPeriod());
+      this.state = {
+        start: start,
+        end: end,
+        activities: new ActivityArray(),
+        selected: null,
+        period: this.props.app.getOptions().getPreferredActivityListPeriod(),
+        page: this.props.app.getOptions().getPreferredActivityListPageSize(),
+        tagFilter: null,
+        moredata: true
+      };
+    }
     this.initialDates = this.initialDates.bind(this);
     this.periodName = this.periodName.bind(this);
     this.search = this.search.bind(this);
@@ -33,8 +55,20 @@ export default class ActivityList extends React.Component {
     this.updatePage = this.updatePage.bind(this);
     this.showPageOptions = this.showPageOptions.bind(this);
     this.unselect = this.unselect.bind(this);
-    
-    this.search(this.state.start, this.state.end, this.state.activities.size(), this.state.page);
+    this.handleTagFilter = this.handleTagFilter.bind(this);
+    this.clearTagFilter = this.clearTagFilter.bind(this);
+
+    if (!props.app.getActivityListState()) {
+      this.search(this.state.start, this.state.end, this.state.tagFilter, this.state.activities.size(), this.state.page);
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    var input = $('#filter-tag-input');
+    if (input.length && input.val() !== this.state.tagFilter) {
+      input.val(this.state.tagFilter);
+      input[0].setCustomValidity('');
+    }
   }
   
   backToList(refresh) {
@@ -42,7 +76,7 @@ export default class ActivityList extends React.Component {
       var start = this.state.start;
       var end = this.state.end;
       this.setState({activities: new ActivityArray(), selected: null});
-      this.search(start, end, 0, this.state.page);      
+      this.search(start, end, this.state.tagFilter, 0, this.state.page);
     } else {
       this.setState({selected: null});
     }
@@ -121,10 +155,13 @@ export default class ActivityList extends React.Component {
     }
   }
   
-  search(start, end, offset, limit) {
+  search(start, end, tag, offset, limit) {
     var url = 'rpc/json/workout/search.php?start=' +  this.toXMLString(start);
     if (end) {
         url = url + '&end=' +  this.toXMLString(end);
+    }
+    if (tag) {
+      url = url + '&tag=' + encodeURIComponent(tag);
     }
     if (offset) {
         url = url + '&offset=' +  offset;
@@ -142,7 +179,7 @@ export default class ActivityList extends React.Component {
   }
   
   moreData() {
-    this.search(this.state.start, this.state.end, this.state.activities.size(), this.state.page);
+    this.search(this.state.start, this.state.end, this.state.tagFilter, this.state.activities.size(), this.state.page);
   }
   
   moveDates(value) {
@@ -176,7 +213,7 @@ export default class ActivityList extends React.Component {
         break;
     }
     this.setState({start: start, end: end, activities: new ActivityArray()});
-    this.search(start, end, 0, this.state.page);
+    this.search(start, end, this.state.tagFilter, 0, this.state.page);
   }
   
   next() {
@@ -190,7 +227,7 @@ export default class ActivityList extends React.Component {
   today() {
     var [start, end] = this.initialDates(this.state.period);
     this.setState({start: start, end: end, activities: new ActivityArray()});
-    this.search(start, end, 0, this.state.page);
+    this.search(start, end, this.state.tagFilter, 0, this.state.page);
   }
   
   toXMLString(date) {
@@ -243,12 +280,12 @@ export default class ActivityList extends React.Component {
   updatePeriod(period) {
     var [start, end] = this.initialDates(period);
     this.setState({start: start, end: end, period: period, activities: new ActivityArray()});
-    this.search(start, end, 0, this.state.page);
+    this.search(start, end, 0, this.state.tagFilter, this.state.page);
   }
   
   updatePage(page) {
     this.setState({page: page, activities: new ActivityArray()});
-    this.search(this.state.start, this.state.end, 0, page);
+    this.search(this.state.start, this.state.tagFilter, this.state.end, 0, page);
   }
   
   showPeriodOptions() {
@@ -274,6 +311,27 @@ export default class ActivityList extends React.Component {
   
   unselect() {
     this.setState({selected: null});
+  }
+
+  handleTagFilter(event) {
+    this.props.app.checkInputDataList(event);
+    if (this.state.tagFilter !== event.target.value) {
+      if (event.target.value && event.target.checkValidity()) {
+        this.setState({tagFilter: event.target.value, activities: new ActivityArray()});
+        this.search(this.state.start, this.state.end, event.target.value, 0, this.state.page);
+      } else if (event.target.value === '') {
+        this.setState({tagFilter: null, activities: new ActivityArray()});
+        this.search(this.state.start, this.state.end, null, 0, this.state.page);
+      }
+    }
+  }
+
+  clearTagFilter(event) {
+    $('#filter-tag-input').val('');
+    if (this.state.filter !== '') {
+      this.setState({tagFilter: null, activities: new ActivityArray()});
+      this.search(this.state.start, this.state.end, null, 0, this.state.page);
+    }
   }
   
   renderMoreData() {
@@ -369,33 +427,37 @@ export default class ActivityList extends React.Component {
       <React.Fragment>
         <div className="main">
           <div className="header">
-            {this.props.app.renderPopupMenu()}
+            {this.props.app.renderPopupMenu(this.state)}
             <h1>{this.periodName()}</h1>
             <p className="left">
                 <FormattedMessage id="runnerupweb.displaying.activities.period" 
                   defaultMessage="Displaying {number} activities for period " 
                   values={{ number: this.state.activities.size() }}/>
-                <a href='javascript:void(0)' onClick={this.showPeriodOptions}>
+                <span className="link" onClick={this.showPeriodOptions}>
                 <FormattedMessage id={'runnerupweb.' + this.state.period} 
                   defaultMessage={this.state.period} />
-                </a>
+                </span>
                 <FormattedMessage id="runnerupweb.and.page.size" 
                   defaultMessage=" and page size "/>
-                <a id='page' href='javascript:void(0)' onClick={this.showPageOptions}>{this.state.page}</a>
+                <span id='page' className="link" onClick={this.showPageOptions}>{this.state.page}</span>
             </p>
             <p className="right">
-                <a href="javascript:void(0)" onClick={this.previous} title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Previous.period'})}>
-                    <img src="resources/open-iconic/svg-white/media-skip-backward.svg" 
-                      alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Previous.period'})}/>
-                </a>
-                <a href="javascript:void(0)" onClick={this.today} title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Today'})}>
-                    <img src="resources/open-iconic/svg-white/media-record.svg"
-                      alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Today'})}/>
-                </a>
-                <a href="javascript:void(0)" onClick={this.next} title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Next.period'})}>
-                    <img src="resources/open-iconic/svg-white/media-skip-forward.svg"
-                      alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Next.period'})} />
-                </a>
+                <span className="tag-short">
+                  <input id="filter-tag-input" list="free-tags" maxLength="128" onChange={this.handleTagFilter}
+                    placeholder={this.props.app.getIntl().formatMessage({id: 'runnerupweb.tag.filter'})}/>
+                  <img onClick={this.clearTagFilter} src="resources/open-iconic/svg-white/x.svg"/>
+                </span>
+                <datalist id="free-tags">
+                  {this.props.app.getAvailableTags().map(tag =>
+                    <option key={tag.tag} value={tag.tag}/>
+                  )}
+                </datalist>
+                <img src="resources/open-iconic/svg-white/media-skip-backward.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Previous.period'})}
+                     onClick={this.previous} title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Previous.period'})}/>
+                <img src="resources/open-iconic/svg-white/media-record.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Today'})}
+                    onClick={this.today} title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Today'})}/>
+                <img src="resources/open-iconic/svg-white/media-skip-forward.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Next.period'})}
+                     onClick={this.next} title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Next.period'})}/>
             </p>
           </div>
           {this.renderSummary()}

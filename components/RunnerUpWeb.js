@@ -6,7 +6,9 @@ import UserForm from './UserForm';
 import UserList from './UserList';
 import Options from './Options';
 import OptionsForm from './OptionsForm';
+import TagList from './TagList';
 import SelectOperation from './SelectOperation';
+import TagConfigForm from './TagConfigForm';
 import {FormattedMessage, FormattedHTMLMessage, injectIntl} from 'react-intl';
 
 export default class RunnerUpWeb extends React.Component {
@@ -20,7 +22,10 @@ export default class RunnerUpWeb extends React.Component {
       options: null,
       level: 'info',
       user: null,
+      tagConfig: null,
       opts: null,
+      availableTags: new Array(),
+      activityListState: null,
       message: ''
     };
     this.showMessage = this.showMessage.bind(this);
@@ -39,15 +44,26 @@ export default class RunnerUpWeb extends React.Component {
     this.moveToUserEdit = this.moveToUserEdit.bind(this);
     this.moveToUserCreate = this.moveToUserCreate.bind(this);
     this.moveToUserList = this.moveToUserList.bind(this);
+    this.moveToTagList = this.moveToTagList.bind(this);
+    this.moveToTagConfigCreate = this.moveToTagConfigCreate.bind(this);
+    this.moveToTagConfigEdit = this.moveToTagConfigEdit.bind(this);
     this.moveToOptionsEdit = this.moveToOptionsEdit.bind(this);
     this.onErrorCommunication = this.onErrorCommunication.bind(this);
     this.requestUserOptions = this.requestUserOptions.bind(this);
     this.doUpload = this.doUpload.bind(this);
     this.renderPopupMenu = this.renderPopupMenu.bind(this);
-    
+    this.onRequestAvailableTagsSuccess = this.onRequestAvailableTagsSuccess.bind(this);
+    this.requestAvailableTags = this.requestAvailableTags.bind(this);
+    this.getAvailableTags = this.getAvailableTags.bind(this);
     this.onUploadSuccess = this.onUploadSuccess.bind(this);
+    this.checkInputDataList = this.checkInputDataList.bind(this);
+    this.checkInputs = this.checkInputs.bind(this);
+    this.getActivityListState = this.getActivityListState.bind(this);
+    this.setActivityListState = this.setActivityListState.bind(this);
+
     if (userInfo) {
       this.requestUserOptions();
+      this.requestAvailableTags();
     }
   }
   
@@ -81,7 +97,29 @@ export default class RunnerUpWeb extends React.Component {
     $('#overlay').fadeIn('slow');
     $(document).bind('keydown', this.hideSelect.bind(this));
   }
-  
+
+  getAvailableTags() {
+    return this.state.availableTags;
+  }
+
+  onRequestAvailableTagsSuccess(result) {
+    if (result.status === 'SUCCESS') {
+      this.setState({availableTags: result.response});
+    } else {
+      this.showMessage('error', result.errorMessage);
+    }
+  }
+
+  requestAvailableTags() {
+    $.ajax({
+        url: 'rpc/json/workout/list_tag_configs.php',
+        type: 'get',
+        contentType: 'application/json',
+        success: this.onRequestAvailableTagsSuccess,
+        error: this.onErrorCommunication
+    });
+  }
+
   onUploadSuccess(data, textStatus, xhr) {
     this.hideSelect();
   }
@@ -152,38 +190,95 @@ export default class RunnerUpWeb extends React.Component {
     } else {
       this.setState({info: info});
       this.requestUserOptions();
+      this.requestAvailableTags();
     }
   }
-  
+
+  checkInputs(id) {
+    // validate inputs
+    var inputs = $(id).find(':input');
+    for (var i = 0; i < inputs.length; i++) {
+      var input = inputs[i];
+      if ($(input).is(":invalid")) {
+        this.showMessage('error', 'The entry ' + $(input).attr('id') + ' is invalid.');
+        $(input).focus();
+        return false;
+      }
+    }
+    return true;
+  }
+
   moveToLogin() {
     sessionStorage.clear();
-    this.setState({info: null, opts: null, page: 'login'});
+    this.setState({info: null, opts: null, options: null, user: null, tagConfig: null, availableTags: new Array(), page: 'login', activityListState: null, message: ''});
   }
   
-  moveToIndex() {
+  moveToIndex(activityListState) {
     if (this.state.page !== 'activity-list') {
-      this.setState({page: 'activity-list'});
+      if (!activityListState) {
+        activityListState = this.state.activityListState;
+      }
+      this.setState({page: 'activity-list', activityListState: activityListState});
     }
   }
   
-  moveToUserEdit(event, user) {
+  moveToUserEdit(event, user, activityListState) {
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
     if (user) {
-      this.setState({page: 'user-edit', user: user});
+      this.setState({page: 'user-edit', user: user, activityListState: activityListState});
     } else {
-      this.setState({page: 'user-edit', user: this.state.info});
+      this.setState({page: 'user-edit', user: this.state.info, activityListState: activityListState});
     }
   }
   
-  moveToUserCreate() {
-    this.setState({page: 'user-create', user: {role: 'USER'}});
+  moveToUserCreate(activityListState) {
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
+    this.setState({page: 'user-create', user: {role: 'USER'}, activityListState: activityListState});
   }
   
-  moveToUserList() {
-    this.setState({page: 'user-list'});
+  moveToUserList(activityListState) {
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
+    this.setState({page: 'user-list', activityListState: activityListState});
   }
-  
-  moveToOptionsEdit() {
-    this.setState({page: 'options-edit'});
+
+  moveToTagList(activityListState) {
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
+    this.setState({page: 'tag-list', activityListState: activityListState});
+  }
+
+  moveToOptionsEdit(activityListState) {
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
+    this.setState({page: 'options-edit', activityListState: activityListState});
+  }
+
+  moveToTagConfigCreate(tagConfig, activityListState) {
+    if (!tagConfig) {
+      tagConfig = {
+        tag: '',
+        description: ''
+      };
+    }
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
+    this.setState({page: 'tag-create', tagConfig: tagConfig, activityListState: activityListState});
+  }
+
+  moveToTagConfigEdit(tagConfig, activityListState) {
+    if (!activityListState) {
+      activityListState = this.state.activityListState;
+    }
+    this.setState({page: 'tag-edit', tagConfig: tagConfig, activityListState: activityListState});
   }
   
   onErrorCommunication(result) {
@@ -249,6 +344,14 @@ export default class RunnerUpWeb extends React.Component {
   getIntl() {
     return this.props.intl;
   }
+
+  getActivityListState() {
+    return this.state.activityListState;
+  }
+
+  setActivityListState(activityListState) {
+    this.setSate({activityListState: activityListState});
+  }
   
   renderSelect() {
     if (this.state.selectOperation) {
@@ -271,30 +374,39 @@ export default class RunnerUpWeb extends React.Component {
     }
     return commonMethod;
   }
+
+  checkInputDataList(event) {
+    var optionFound = false, datalist = event.target.list;
+    if (event.target.value) {
+      for (var i = 0; i < datalist.options.length; i++) {
+        if (event.target.value == datalist.options[i].value) {
+          optionFound = true;
+          break;
+        }
+      }
+    }
+    if (!event.target.value || optionFound) {
+      event.target.setCustomValidity('');
+    } else {
+      event.target.setCustomValidity('error');
+    }
+  }
   
-  renderPopupMenu(fromPage, pageMethod) {
+  renderPopupMenu(activityListState, indexMethod) {
+    if (!indexMethod) {
+      indexMethod = this.moveToIndex;
+    }
     return(
       <div className="left">
-        <a title={this.getIntl().formatMessage({id: 'runnerupweb.Index'})} href="javascript:void(0)" onClick={this.popupMethod(this.moveToIndex, 'activity-list', fromPage, pageMethod)}>
-          <img src="resources/open-iconic/svg-white/home.svg"/>
-        </a>
-        <a title={this.getIntl().formatMessage({id: 'runnerupweb.User.Information'})} href="javascript:void(0)" onClick={this.popupMethod(this.moveToUserEdit, 'user-edit', fromPage, pageMethod)}>
-          <img src="resources/open-iconic/svg-white/person.svg"/>
-        </a>
+        <img src="resources/open-iconic/svg-white/home.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.Index'})} onClick={() => indexMethod(activityListState)}/>
+        <img src="resources/open-iconic/svg-white/person.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.User.Information'})} onClick={() => this.moveToUserEdit(null, null, activityListState)}/>
         {this.state.info && this.state.info.role && this.state.info.role === 'ADMIN' &&
-          <a title={this.getIntl().formatMessage({id: 'runnerupweb.User.Management'})} href="javascript:void(0)" onClick={this.popupMethod(this.moveToUserList, 'user-list', fromPage, pageMethod)}>
-            <img src="resources/open-iconic/svg-white/people.svg"/>
-          </a>
+          <img src="resources/open-iconic/svg-white/people.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.User.Management'})} onClick={() => this.moveToUserList(activityListState)}/>
         }
-        <a title={this.getIntl().formatMessage({id: 'runnerupweb.User.Options'})} href="javascript:void(0)" onClick={this.popupMethod(this.moveToOptionsEdit, 'options-edit', fromPage, pageMethod)}>
-          <img src="resources/open-iconic/svg-white/puzzle-piece.svg"/>
-        </a>
-        <a title={this.getIntl().formatMessage({id: 'runnerupweb.Upload'})} href="javascript:void(0)" onClick={this.popupMethod(this.showUpload, 'upload', fromPage, pageMethod)}>
-          <img src="resources/open-iconic/svg-white/cloud-upload.svg"/>
-        </a>
-        <a title={this.getIntl().formatMessage({id: 'runnerupweb.Logout'})} href="javascript:void(0)" onClick={this.popupMethod(this.logout, 'logout', fromPage, pageMethod)}>
-          <img src="resources/open-iconic/svg-white/account-logout.svg"/>
-        </a>
+        <img src="resources/open-iconic/svg-white/tag.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.Tag.Management'})} onClick={() => this.moveToTagList(activityListState)}/>
+        <img src="resources/open-iconic/svg-white/puzzle-piece.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.User.Options'})} onClick={() => this.moveToOptionsEdit(activityListState)}/>
+        <img src="resources/open-iconic/svg-white/cloud-upload.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.Upload'})} onClick={this.showUpload}/>
+        <img src="resources/open-iconic/svg-white/account-logout.svg" title={this.getIntl().formatMessage({id: 'runnerupweb.Logout'})} onClick={this.logout}/>
       </div>
     );
   }
@@ -313,6 +425,12 @@ export default class RunnerUpWeb extends React.Component {
         return (<UserForm app={this} info={this.state.info} user={this.state.user} mode={'create'}/>);
       case 'options-edit':
         return (<OptionsForm app={this} info={this.state.info} opts={this.state.opts}/>);
+      case 'tag-list':
+        return (<TagList app={this}/>);
+      case 'tag-create':
+        return (<TagConfigForm app={this} tagConfig={this.state.tagConfig} mode={'create'}/>);
+      case 'tag-edit':
+        return (<TagConfigForm app={this} tagConfig={this.state.tagConfig} mode={'edit'}/>);
       default:
         return {};
     }

@@ -21,6 +21,7 @@ namespace runnerupweb\common;
 
 use runnerupweb\data\Activity;
 use runnerupweb\data\ActivityLap;
+use runnerupweb\data\ActivityTrackpoint;
 use runnerupweb\common\Logging;
 
 /**
@@ -70,16 +71,18 @@ class TCXManager {
     // PARSE METHODS
     //
     
-    private function parseHeartBeat(\XMLReader $reader, ActivityLap $lap) {
+    private function parseHeartBeat(\XMLReader $reader, ?ActivityLap $lap, ?ActivityTrackpoint $trackpoint = null): void {
         if ($reader->nodeType === \XMLReader::ELEMENT && 
-                ($reader->name === 'AverageHeartRateBpm' || $reader->name === 'MaximumHeartRateBpm')) {
+                ($reader->name === 'AverageHeartRateBpm' || $reader->name === 'MaximumHeartRateBpm' || $reader->name === 'HeartRateBpm')) {
             $name = $reader->name;
             while ($reader->read()) {
                 if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Value') {
                     if ($name === 'AverageHeartRateBpm') {
                         $lap->setAverageHeartRateBpm($reader->readString());
-                    } else {
+                    } else if ($name === 'MaximumHeartRateBpm') {
                         $lap->setMaximumHeartRateBpm($reader->readString());
+                    } else if ($name === 'HeartRateBpm') {
+                        $trackpoint->setHeartRate(floatval($reader->readString()));
                     }
                 } else if ($reader->nodeType === \XMLReader::ELEMENT) {
                     // not interested in this value
@@ -90,8 +93,100 @@ class TCXManager {
             }
         }
     }
-    
-    private function parseLap(\XMLReader $reader) {
+
+    private function parsePosition(\XMLReader $reader, ActivityTrackpoint $trackpoint): void {
+        if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Position') {
+            Logging::debug("parsePosition starting...");
+            $continue = $reader->read();
+            while ($continue) {
+                $readnext = true;
+                if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'LatitudeDegrees') {
+                    $trackpoint->setLatitude(floatval($reader->readString()));
+                } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'LongitudeDegrees') {
+                    $trackpoint->setLongitude(floatval($reader->readString()));
+                } elseif ($reader->nodeType === \XMLReader::END_ELEMENT && $reader->name === 'Position') {
+                    Logging::debug("return tracpoint...", array($trackpoint));
+                    return;
+                }  else if ($reader->nodeType === \XMLReader::ELEMENT) {
+                    // not interested in this value
+                    Logging::debug("going next $reader->name");
+                    $continue = $reader->next();
+                    $readnext = false;
+                }
+                // read next only if not next()
+                if ($readnext) {
+                    $continue = $reader->read();
+                }
+            }
+        };
+    }
+
+    private function parseTrackpoint(\XMLReader $reader): ?ActivityTrackpoint {
+        if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Trackpoint') {
+            Logging::debug("parseTrackpoint starting...");
+            $trackpoint = new ActivityTrackpoint();
+            $continue = $reader->read();
+            while ($continue) {
+                $readnext = true;
+                if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Time') {
+                    $trackpoint->setTimeFromString($reader->readString());
+                } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Position') {
+                    $this->parsePosition($reader, $trackpoint);
+                } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'AltitudeMeters') {
+                    $trackpoint->setAltitude(floatval($reader->readString()));
+                } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'DistanceMeters') {
+                    $trackpoint->setDistance(floatval($reader->readString()));
+                } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'HeartRateBpm') {
+                    $this->parseHeartBeat($reader, null, $trackpoint);
+                } elseif ($reader->nodeType === \XMLReader::END_ELEMENT && $reader->name === 'Trackpoint') {
+                    Logging::debug("return tracpoint...", array($trackpoint));
+                    return $trackpoint;
+                }  else if ($reader->nodeType === \XMLReader::ELEMENT) {
+                    // not interested in this value
+                    Logging::debug("going next $reader->name");
+                    $continue = $reader->next();
+                    $readnext = false;
+                }
+                
+                if ($readnext) {
+                    $continue = $reader->read();
+                }
+            }
+        }
+        return null;
+    }
+
+    private function parseTrack(\XMLReader $reader, ActivityLap $lap): void {
+        if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Track') {
+            Logging::debug("parseTrack starting...");
+            $continue = $reader->read();
+            while ($continue) {
+                $readnext = true;
+                if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Trackpoint') {
+                    $trackpoint = $this->parseTrackpoint($reader);
+                    // just add the trackpoint if it has at least distance and latitude,longitude
+                    // it is useless otherwise
+                    if (!is_null($trackpoint->getDistance()) && !is_null($trackpoint->getLatitude()) && !is_null($trackpoint->getLongitude())) {
+                        $lap->add($trackpoint);
+                    }
+                } elseif ($reader->nodeType === \XMLReader::END_ELEMENT && $reader->name === 'Track') {
+                    Logging::debug("return tracpoint...", array($trackpoint));
+                    return;
+                }  else if ($reader->nodeType === \XMLReader::ELEMENT) {
+                    // not interested in this value
+                    Logging::debug("going next $reader->name");
+                    $continue = $reader->next();
+                    $readnext = false;
+                }
+                // read next only if not next()
+                if ($readnext) {
+                    $continue = $reader->read();
+                }
+            }
+        };
+    }
+
+    private function parseLap(\XMLReader $reader): ?ActivityLap {
         if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Lap') {
             Logging::debug("parseLap starting...");
             $lap = new ActivityLap();
@@ -110,13 +205,16 @@ class TCXManager {
                     $lap->setCalories($reader->readString());
                 } elseif ($reader->nodeType === \XMLReader::ELEMENT && 
                         ($reader->name === 'AverageHeartRateBpm' || $reader->name === 'MaximumHeartRateBpm')) {
-                    $this->parseHeartBeat($reader, $lap);
+                    $this->parseHeartBeat($reader, $lap, null);
                 } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Intensity') {
                     $lap->setIntensity($reader->readString());
                 } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'TriggerMethod') {
                     $lap->setTriggerMethod($reader->readString());
                 } elseif ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Cadence') {
                     $lap->setCadence($reader->readString());
+
+                } else if ($reader->nodeType == \XMLReader::ELEMENT && $reader->name === 'Track') {
+                    $this->parseTrack($reader, $lap);
                 } else if ($reader->nodeType === \XMLReader::ELEMENT) {
                     // not interested in this value 
                     Logging::debug("going next $reader->name");
@@ -132,6 +230,7 @@ class TCXManager {
                 }
             }
         }
+        return null;
     }
     
     private function parseActivity(\XMLReader $reader) {

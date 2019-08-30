@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2019 <https://github.com/rickyepoderi/runnerupweb>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import $ from "jquery";
 import React from 'react';
 import SelectOperation from './SelectOperation';
@@ -17,7 +34,6 @@ export default class UserForm extends React.Component {
     this.handleLastname = this.handleLastname.bind(this);
     this.handleEmail = this.handleEmail.bind(this);
     this.handleRole = this.handleRole.bind(this);
-    this.checkInputs = this.checkInputs.bind(this);
     this.doSave = this.doSave.bind(this);
     this.onUpdateSuccess = this.onUpdateSuccess.bind(this);
     this.onDeleteSuccess = this.onDeleteSuccess.bind(this);
@@ -93,20 +109,6 @@ export default class UserForm extends React.Component {
     this.handleAttribute('role', event);
   }
   
-  checkInputs() {
-    // validate inputs
-    var inputs = $('#form').find(':input');
-    for (var i = 0; i < inputs.length; i++) {
-      var input = inputs[i];
-      if ($(input).is(":invalid")) {
-        this.props.app.showMessage('error', 'The entry ' + $(input).attr('id') + ' is invalid.');
-        $(input).focus();
-        return false;
-      }
-    }
-    return true;
-  }
-  
   onUpdateSuccess(result) {
     if (result.status === 'SUCCESS') {
       var user = this.state.user;
@@ -129,9 +131,9 @@ export default class UserForm extends React.Component {
       this.props.app.showMessage('error', result.errorMessage);
     }
   }
-  
+
   doSave() {
-    if (this.checkInputs()) {
+    if (this.props.app.checkInputs('#form')) {
       var user = this.convertUser(this.state.user);
       var orig = this.convertUser(this.fillUser(this.props.user));
       if ((user.password || user.confirmPassword) &&
@@ -231,7 +233,7 @@ export default class UserForm extends React.Component {
               <label htmlFor="email">
                 <FormattedMessage id="runnerupweb.Role" defaultMessage="E-mail"/>:
               </label>
-              <select id="role" value={this.state.user.role} disabled={this.props.mode !== 'create'}  onChange={this.handleRole}>
+              <select id="role" value={this.state.user.role} disabled={this.props.info.role !== 'ADMIN' }  onChange={this.handleRole}>
                 <option value="USER">{this.props.app.getIntl().formatMessage({id: 'runnerupweb.USER'})}</option>
                 <option value="ADMIN">{this.props.app.getIntl().formatMessage({id: 'runnerupweb.ADMIN'})}</option>
               </select>

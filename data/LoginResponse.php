@@ -29,6 +29,7 @@ class LoginResponse implements \JsonSerializable {
     private $status;
     private $errorCode;
     private $errorMesg;
+    private $extra;
     
     protected function __construct($status, $errorCode = null, $errorMesg = null) {
         $this->status = $status;
@@ -101,6 +102,23 @@ class LoginResponse implements \JsonSerializable {
      */
     public function getErrorMessage() {
         return $this->errorMesg;
+    }
+
+    /**
+     * Setter for extra
+     * @param type $extra
+     * @return void
+     */
+    public function setExtra($extra): void {
+        $this->extra = $extra;
+    }
+
+    /**
+     * Getter for extra
+     * @return type
+     */
+    public function getExtra() {
+        return $this->extra;
     }
     
     /**

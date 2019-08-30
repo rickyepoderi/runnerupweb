@@ -62,7 +62,7 @@ class UserManager extends DataBase {
      * @param type $maxrows The max rows to return
      * @return UserManager The singleton UserManager initialized
      */
-    static public function initUserManager($url, $username, $password, $maxrows) {
+    static public function initUserManager($url, $username, $password, $maxrows): UserManager {
         static::$userManager = new UserManager($url, $username, $password, $maxrows);
         return static::getUserManager();
     }
@@ -72,7 +72,7 @@ class UserManager extends DataBase {
      * 
      * @return UserManager The user manager singleton
      */
-    static public function getUserManager() {
+    static public function getUserManager(): UserManager {
         return static::$userManager;
     }
     
@@ -82,7 +82,7 @@ class UserManager extends DataBase {
      * @return User The same user created
      * @throws \runnerupweb\common\Exception
      */
-    public function createUser(User $user) {
+    public function createUser(User $user): User {
         if ($user->getPassword() != null) {
             $prevpwd = $user->getPassword();
             $password = hash('sha512', $prevpwd);
@@ -110,7 +110,7 @@ class UserManager extends DataBase {
      * @return User User or null
      * @throws \runnerupweb\common\Exception
      */
-    public function getUser($login) {
+    public function getUser(string $login): ?User {
         $db = $this->getConnection();
         try {
             $stmt = $db->prepare("SELECT firstname, lastname, email, role FROM user WHERE login = ?");
@@ -142,7 +142,7 @@ class UserManager extends DataBase {
      * @return User The user if password ok, null otherwise
      * @throws \runnerupweb\common\Exception
      */
-    public function checkUserPassword($login, $password) {
+    public function checkUserPassword(string $login, string $password): ?User {
         $db = $this->getConnection();
         try {
             $stmt = $db->prepare("SELECT password, firstname, lastname, email, role FROM user WHERE login = ?");
@@ -177,7 +177,7 @@ class UserManager extends DataBase {
      * @throws \runnerupweb\common\Exception
      * @throws \PDOException
      */
-    public function updateUser(User $user) {
+    public function updateUser(User $user): User {
         $db = $this->getConnection();
         try {
             $sql = "UPDATE user SET firstname=?, lastname=?, email=?, role=?";
@@ -193,7 +193,7 @@ class UserManager extends DataBase {
             } else {
                 $stmt->execute([$user->getFirstname(), $user->getLastname(), $user->getEmail(), $user->getRole(), $user->getLogin()]);
             }
-            if ($stmt->rowCount() > 1) {
+            if ($stmt->rowCount() === 0) {
                 Logging::debug("Row count: ", array($stmt->rowCount()));
                 throw new \PDOException("The user does not exists!");
             }
@@ -209,10 +209,10 @@ class UserManager extends DataBase {
     /**
      * Method that deletes a user in the ddbb.
      * @param string $login The login to delete
-     * @return int Rows deleted
+     * @return bool user was deleted
      * @throws Exception 
      */
-    public function deleteUser($login) {
+    public function deleteUser(string $login): bool {
         $db = $this->getConnection();
         try {
             $stmt = $db->prepare("DELETE FROM user WHERE login = ?");
@@ -235,7 +235,7 @@ class UserManager extends DataBase {
      * @return string
      * @throws Exception
      */
-    private function assignOperation($name, $op, $value, $first, &$parameters) {
+    private function assignOperation(string $name, int $op, string $value, bool $first, array &$parameters): string {
         $res = "";
         if ($value) {
             switch ($op) {
@@ -276,7 +276,7 @@ class UserManager extends DataBase {
      * @param int $limit for pages searches (default to 0 => transformed to maxrows)
      * @return User[] Array of Users
      */
-    public function search($login, $firstname, $lastname, $email, $op, $offset = null, $limit = null) {
+    public function search(?string $login, ?string $firstname, ?string $lastname, ?string $email, int $op, ?int $offset = null, ?int $limit = null): array {
         Logging::debug("search $login $firstname $lastname $op $offset $limit");
         $limit = ($limit == null)? $this->maxrows : $limit;
         $offset = ($offset == null)? 0 : $offset;

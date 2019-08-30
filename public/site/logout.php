@@ -20,9 +20,10 @@
 require __DIR__ . '/../../bootstrap.php';
 
 use runnerupweb\data\LoginResponse;
+use runnerupweb\common\WebUtils;
 
 // do normal check of the session
-include_once('../../include/header_session.php');
+WebUtils::checkUserSession('GET');
 
 // unset session data
 $_SESSION = array();

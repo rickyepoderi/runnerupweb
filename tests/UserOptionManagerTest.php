@@ -31,11 +31,11 @@ use PHPUnit\Framework\TestCase;
  */
 class UserOptionManagerTest extends TestCase {
     
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         Configuration::getConfiguration();
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         // noop
     }
     

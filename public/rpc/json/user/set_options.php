@@ -20,13 +20,12 @@
 require __DIR__ . '/../../../../bootstrap.php';
 
 use runnerupweb\common\Logging;
-use runnerupweb\data\UserOption;
 use runnerupweb\common\UserOptionManager;
+use runnerupweb\common\WebUtils;
 use runnerupweb\data\LoginResponse;
+use runnerupweb\data\UserOption;
 
-include_once('../../../../include/header_session.php');
-
-header('Content-type: application/json');
+$user = WebUtils::checkUserSession('POST');
 
 try {
     // get the json options

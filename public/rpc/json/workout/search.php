@@ -25,19 +25,18 @@ use runnerupweb\common\ActivityManager;
 use runnerupweb\common\Logging;
 use runnerupweb\common\WebUtils;
 
-include_once('../../../../include/header_session.php');
+$user = WebUtils::checkUserSession('GET');
 
 $am = ActivityManager::getActivityManager();
-// the result is json
-header('Content-type: application/json');
 // read the parameters
 $start = WebUtils::getCompulsoryDateTime('start', 1);
 $end = WebUtils::getOptionalDateTime('end', 2);
+$tag = filter_input(INPUT_GET, 'tag');
 $offset = WebUtils::getOptionalInt('offset', 3, 0);
 $limit = WebUtils::getOptionalInt('limit', 4, 1, $am->getMaxRows());
 // start doing the search
 try {
-    $activities = $am->searchActivities($user->getLogin(), $start, $end, $offset, $limit);
+    $activities = $am->searchActivities($user->getLogin(), $start, $end, $tag, $offset, $limit);
     Logging::debug("Found activities: " . count($activities));
     echo json_encode(new ActivitySearchResponse($activities), JSON_PRETTY_PRINT);
 } catch(Exception $ex) {

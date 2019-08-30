@@ -172,6 +172,14 @@ class Activity implements \JsonSerializable {
     function getFilename() {
         return $this->filename;
     }
+
+    /**
+     * Getter for the laps
+     * @return array
+     */
+    function getLaps(): array {
+        return $this->laps;
+    }
     
     /**
      * Setter for the id
@@ -278,7 +286,15 @@ class Activity implements \JsonSerializable {
     function setFilename($filename) {
         $this->filename = $filename;
     }
-    
+
+    /**
+     * Setter for the laps
+     * @param array|null laps
+     */
+    function setLaps(?array $laps): void {
+        $this->laps = $laps;
+    }
+
     /**
      * Add another lap to the activity.
      * @param \runnerupweb\data\ActivityLap $lap

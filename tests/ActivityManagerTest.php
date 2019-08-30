@@ -19,7 +19,9 @@
 
 use runnerupweb\common\ActivityManager;
 use runnerupweb\common\UserManager;
+use runnerupweb\common\TagManager;
 use runnerupweb\data\User;
+use runnerupweb\data\TagConfig;
 use runnerupweb\common\Configuration;
 use PHPUnit\Framework\TestCase;
 
@@ -30,11 +32,11 @@ use PHPUnit\Framework\TestCase;
  */
 class ActivityManagerTest extends TestCase {
     
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         Configuration::getConfiguration();
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         // noop
     }
     
@@ -51,6 +53,7 @@ class ActivityManagerTest extends TestCase {
     public function testStore() {
         $am = ActivityManager::getActivityManager();
         $um = UserManager::getUserManager();
+        $tm = TagManager::getTagManager();
         // create a user in the database
         $user = $this->createUser();
         $um->createUser($user);
@@ -74,6 +77,32 @@ class ActivityManagerTest extends TestCase {
                 DateTime::createFromFormat('Y-m-d H:i:s', '2015-09-20 00:00:00'));
         $this->assertEquals(1, count($res));
         $this->assertEquals($res[0], $activities[0]);
+        // assign the tag and search again
+        $this->assertNotNull($tm->createTagConfig($user->getLogin(), TagConfig::tagConfigWithDescription('tag-test', 'tag-test')));
+        $this->assertTrue($tm->assignTagToActivity($user->getLogin(), $activities[0]->getId(), 'tag-test'));
+        $res = $am->searchActivities($user->getLogin(),
+                DateTime::createFromFormat('Y-m-d H:i:s', '2015-09-19 00:00:00'),
+                DateTime::createFromFormat('Y-m-d H:i:s', '2015-09-20 00:00:00'),
+                'tag-test');
+        $this->assertEquals(1, count($res));
+        $this->assertEquals($res[0], $activities[0]);
+        // re-read the activity from the file
+        $activity = $am->getActivityFromFile($user->getLogin(), $activities[0]->getId());
+        $this->assertNotNull($activity);
+        $this->assertNotNull($activity->getLaps());
+        $this->assertTrue(count($activity->getLaps()) > 0);
+        // recalculate the tags
+        $tagConfig = TagConfig::tagConfigWithDescription('running', 'running automatic tag');
+        $tagConfig->setConfig('Running');
+        $tagConfig->setProvider('runnerupweb\common\autotags\SportActivityAutomaticTag');
+        $this->assertNotNull($tm->createTagConfig($user->getLogin(), $tagConfig));
+        $this->assertTrue($am->recalculateTagsInActivity($user->getLogin(), $activity->getId(), true));
+        $res = $am->searchActivities($user->getLogin(),
+                DateTime::createFromFormat('Y-m-d H:i:s', '2015-09-19 00:00:00'),
+                DateTime::createFromFormat('Y-m-d H:i:s', '2015-09-20 00:00:00'),
+                'tag-test');
+        $this->assertEquals(1, count($res));
+        $this->assertEquals($activity->getId(), $res[0]->getId());
         // delete the activity
         $this->assertTrue($am->deleteActivity($user->getLogin(), $activities[0]->getId()));
         $this->assertNull($am->getActivityFile($user->getLogin(), $activity->getId()));

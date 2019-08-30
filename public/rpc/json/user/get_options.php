@@ -22,10 +22,9 @@ require __DIR__ . '/../../../../bootstrap.php';
 use runnerupweb\common\Logging;
 use runnerupweb\common\UserOptionManager;
 use runnerupweb\data\UserOptionResponse;
+use runnerupweb\common\WebUtils;
 
-include_once('../../../../include/header_session.php');
-
-header('Content-type: application/json');
+$user = WebUtils::checkUserSession('GET');
 
 try {
     $uom = UserOptionManager::getUserOptionManager();

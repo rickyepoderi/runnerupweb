@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2019 <https://github.com/rickyepoderi/runnerupweb>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import $ from 'jquery';
 import React from 'react';
 import Dygraph from 'dygraphs';
@@ -10,6 +27,10 @@ export default class Activity extends React.Component {
     super(props);
     this.state = {
       activity: this.props.activity,
+      tags: new Array(),
+      notAssignedTags: new Array(),
+      selectedTag: null,
+      automaticTagProviders: new Array(),
       tcx: null
     };
     this.onDownloadSuccess = this.onDownloadSuccess.bind(this);
@@ -22,19 +43,151 @@ export default class Activity extends React.Component {
     this.confirmDelete = this.confirmDelete.bind(this);
     this.doDelete = this.doDelete.bind(this);
     this.onDeleteSuccess = this.onDeleteSuccess.bind(this);
+    this.listActivityTags = this.listActivityTags.bind(this);
+    this.onListActivityTagsSuccess = this.onListActivityTagsSuccess.bind(this);
+    this.assignTagToActivity = this.assignTagToActivity.bind(this);
+    this.realAssignTagToActivity = this.realAssignTagToActivity.bind(this);
+    this.onAssignTagToActivity = this.onAssignTagToActivity.bind(this);
+    this.removeTagFromActivity = this.removeTagFromActivity.bind(this);
+    this.realremoveTagFromActivity = this.realremoveTagFromActivity.bind(this);
+    this.onRemoveTagToActivity = this.onRemoveTagToActivity.bind(this);
+    this.keyPress = this.keyPress.bind(this);
+    this.listAutomaticTags = this.listAutomaticTags.bind(this);
+    this.onListAutomaticTagsSuccess = this.onListAutomaticTagsSuccess.bind(this);
+    this.createAutomaticTag = this.createAutomaticTag.bind(this);
+    this.requestTagConfigFromProvider = this.requestTagConfigFromProvider.bind(this);
+    this.onRequestTagConfigFromProviderSuccess = this.onRequestTagConfigFromProviderSuccess.bind(this);
+    this.realRecalculateAutomaticTags = this.realRecalculateAutomaticTags.bind(this);
+    this.recalculateAutomaticTags = this.recalculateAutomaticTags.bind(this);
     
-    this.downloadActivity(this.props.activity.id);
+    this.downloadActivity();
+    this.listActivityTags();
+    this.listAutomaticTags();
   }
-  
+
+   onListActivityTagsSuccess(data) {
+    if (data.status === 'SUCCESS') {
+      this.setState({tags: data.response, notAssignedTags: this.calculateNotAssignedTags(data.response)});
+    } else {
+      this.props.app.showMessage('error', data.errorMessage);
+    }
+  }
+
+  listActivityTags() {
+    $.ajax({
+      url: 'rpc/json/workout/list_workout_tags.php?id=' + this.props.activity.id,
+      type: 'get',
+      contentType: 'application/xml',
+      ifModified: false,
+      success: this.onListActivityTagsSuccess,
+      error: this.props.app.onErrorCommunication
+    });
+  }
+
+  calculateNotAssignedTags(tags) {
+    var allTags = this.props.app.getAvailableTags();
+    var allTagNames = allTags.map(tag => {return tag.tag});
+    var assignedTagNames = tags.map(tag => {return tag.tag});
+    return allTagNames.filter(name => !assignedTagNames.includes(name));
+  }
+
+  onAssignTagToActivity(data) {
+    if (data.status === 'SUCCESS') {
+      $('#new-tag-input').val('');
+      this.listActivityTags();
+    } else {
+      this.props.app.showMessage('error', data.errorMessage);
+    }
+  }
+
+  realAssignTagToActivity(answer) {
+    if (answer === 'yes') {
+      var input = $('#new-tag-input');
+      if (input.val() && input[0].checkValidity()) {
+        $.ajax({
+          url: 'rpc/json/workout/manage_workout_tag.php?op=ASSIGN&id=' + this.props.activity.id + "&tag=" + encodeURIComponent(input.val()),
+          type: 'post',
+          dataType: 'json',
+          contentType: 'application/json',
+          success: this.onAssignTagToActivity,
+          error: this.props.app.onErrorCommunication
+        });
+      }
+    }
+  }
+
+  assignTagToActivity() {
+    var input = $('#new-tag-input');
+    if (input.val() && input[0].checkValidity()) {
+      var tag = this.props.app.getAvailableTags().find(t => t.tag === input.val());
+      if (tag) {
+        if (tag.auto) {
+          this.props.app.showSelect(SelectOperation.createSelect(
+            this.props.app.getIntl().formatMessage({id: 'runnerupweb.are.you.sure.you.want.to.assign.tag'}, {tag: tag.tag}),
+            {
+              yes: this.props.app.getIntl().formatMessage({id: 'runnerupweb.Yes'}),
+              no: this.props.app.getIntl().formatMessage({id: 'runnerupweb.No'})
+            },
+            this.realAssignTagToActivity)
+          );
+        } else {
+          this.realAssignTagToActivity('yes')
+        }
+      }
+    }
+  }
+
+  onRemoveTagToActivity(data) {
+    if (data.status === 'SUCCESS') {
+      this.listActivityTags();
+    } else {
+      this.props.app.showMessage('error', data.errorMessage);
+    }
+  }
+
+  realremoveTagFromActivity(answer, tag) {
+    if (!tag) {
+      tag = this.state.selectedTag;
+    }
+    if (answer === 'yes') {
+      $.ajax({
+        url: 'rpc/json/workout/manage_workout_tag.php?op=UNASSIGN&id=' + this.props.activity.id + "&tag=" + encodeURIComponent(tag.tag),
+        type: 'post',
+        dataType: 'json',
+        contentType: 'application/json',
+        success: this.onRemoveTagToActivity,
+        error: this.props.app.onErrorCommunication
+      });
+    }
+  }
+
+  removeTagFromActivity(event) {
+    var txt = $(event.target).parent().text();
+    var tag = this.state.tags.find(t => t.tag === txt);
+    this.setState({selectedTag: tag});
+    if (tag.auto) {
+      this.props.app.showSelect(SelectOperation.createSelect(
+        this.props.app.getIntl().formatMessage({id: 'runnerupweb.are.you.sure.you.want.to.delete.tag'}, {tag: tag.tag}),
+        {
+          yes: this.props.app.getIntl().formatMessage({id: 'runnerupweb.Yes'}),
+          no: this.props.app.getIntl().formatMessage({id: 'runnerupweb.No'})
+        },
+        this.realremoveTagFromActivity)
+      );
+    } else {
+      this.realremoveTagFromActivity('yes', tag)
+    }
+  }
+
   onDownloadSuccess(data) {
     var activity = new TCXActivity(this.props.activity.id, 'map', this.props.app.getOptions(), data);
     this.setState({tcx: activity});
     activity.prepareMap();
   }
   
-  downloadActivity(id) {
+  downloadActivity() {
     $.ajax({
-      url: 'rpc/json/workout/download.php?id=' + id,
+      url: 'rpc/json/workout/download.php?id=' + this.props.activity.id,
       type: 'get',
       contentType: 'application/xml',
       ifModified: false,
@@ -349,17 +502,109 @@ export default class Activity extends React.Component {
       );
     }
   }
+
+  keyPress(event) {
+    if (event.which === 13) {
+      this.assignTagToActivity();
+    }
+  }
+
+  onListAutomaticTagsSuccess(data) {
+    if (data.status === 'SUCCESS') {
+      var providers = {};
+      for (var i = 0; i < data.response.length; i++) {
+        providers[data.response[i]] = data.response[i];
+      }
+      this.setState({automaticTagProviders: providers});
+    } else {
+      this.props.app.showMessage('error', data.errorMessage);
+    }
+  }
   
+  listAutomaticTags() {
+    $.ajax({
+      url: 'rpc/json/workout/automatic_tag.php?',
+      type: 'get',
+      contentType: 'application/json',
+      success: this.onListAutomaticTagsSuccess,
+      error: this.props.app.onErrorCommunication
+    });
+  }
+
+  onRequestTagConfigFromProviderSuccess(data) {
+    if (data.status === 'SUCCESS') {
+      this.props.app.moveToTagConfigCreate(data.response, this.props.activityList.state);
+    } else {
+      this.props.app.showMessage('error', data.errorMessage);
+    }
+  }
+  
+  requestTagConfigFromProvider(provider) {
+    $.ajax({
+      url: 'rpc/json/workout/automatic_tag.php?provider=' + encodeURIComponent(provider) + '&id=' + this.props.activity.id,
+      type: 'get',
+      contentType: 'application/json',
+      success: this.onRequestTagConfigFromProviderSuccess,
+      error: this.props.app.onErrorCommunication
+    });
+  }
+
+  createAutomaticTag() {
+    this.props.app.showSelect(SelectOperation.createSelect('',
+      this.state.automaticTagProviders,
+      this.requestTagConfigFromProvider)
+    );
+  }
+
+  realRecalculateAutomaticTags($answer) {
+    $.ajax({
+      url: 'rpc/json/workout/calculate_automatic_tags.php?id=' + this.props.activity.id + '&delete=' + $answer,
+      type: 'post',
+      contentType: 'application/json',
+      success: this.listActivityTags,
+      error: this.props.app.onErrorCommunication
+    });
+  }
+
+  recalculateAutomaticTags() {
+    this.props.app.showSelect(SelectOperation.createSelect(
+      this.props.app.getIntl().formatMessage({id: 'runnerupweb.delete.tags.recalculate'}),
+      {
+        true: this.props.app.getIntl().formatMessage({id: 'runnerupweb.Yes'}),
+        false: this.props.app.getIntl().formatMessage({id: 'runnerupweb.No'})
+      },
+      this.realRecalculateAutomaticTags)
+    );
+  }
+
   render() {
     return(
       <React.Fragment>
         <div className="header">
-          {this.props.app.renderPopupMenu('activity-list', this.props.activityList.unselect)}
+          {this.props.app.renderPopupMenu(this.props.activityList.state, this.props.activityList.unselect)}
           <h1 id="title">{this.props.app.getOptions().getDateTime(this.state.activity.startTime)}</h1>
+          <p className="left">
+            {this.state.tags.map(tag =>
+                <span key={tag.tag} className={tag.auto? 'tag-auto-short':'tag-short'}>{tag.tag}<img src="resources/open-iconic/svg-white/x.svg" onClick={this.removeTagFromActivity}/></span>
+            )}
+            <span className="tag-short">
+              <input id="new-tag-input" list="free-tags" maxLength="128" onChange={this.props.app.checkInputDataList} onKeyPress={this.keyPress}
+                     placeholder={this.props.app.getIntl().formatMessage({id: 'runnerupweb.tag.new'})}/>
+              <img onClick={this.assignTagToActivity} src="resources/open-iconic/svg-white/play-circle.svg"/>
+            </span>
+            <datalist id="free-tags">
+              {this.state.notAssignedTags.map(name =>
+                <option key={name} value={name}/>
+              )}
+            </datalist>
+          </p>
           <p className="right">
-            <a href="javascript:void(0)" title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Delete'})} onClick={this.confirmDelete}>
-              <img src="resources/open-iconic/svg-white/trash.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Delete'})}/>
-            </a>
+            <img src="resources/open-iconic/svg-white/tags.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.create.new.automatic.tag'})}
+                 title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.create.new.automatic.tag'})} onClick={this.createAutomaticTag}/>
+            <img src="resources/open-iconic/svg-white/reload.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.recalculate.automatic.tags'})}
+                 title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.recalculate.automatic.tags'})} onClick={this.recalculateAutomaticTags}/>
+            <img src="resources/open-iconic/svg-white/trash.svg" alt={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Delete'})}
+                 title={this.props.app.getIntl().formatMessage({id: 'runnerupweb.Delete'})} onClick={this.confirmDelete}/>
           </p>
         </div>
         {this.renderMagnitudes()}

@@ -58,13 +58,13 @@ class ActivityManager extends DataBase {
     
     /**
      * Initializer for the singleton.
-     * @param type $url The URL to the database
-     * @param type $username The username to connect to the ddbb
-     * @param type $password The password of the user
-     * @param type $maxrows Maximum rows to select
+     * @param string $url The URL to the database
+     * @param string $username The username to connect to the ddbb
+     * @param string $password The password of the user
+     * @param string $maxrows Maximum rows to select
      * @return ActivityManager The singleton
      */
-    static public function initActivityManager($url, $username, $password, $maxrows) {
+    static public function initActivityManager(string $url, string $username, string $password, string $maxrows): ActivityManager {
         static::$activityManager = new ActivityManager($url, $username, $password, $maxrows);
         return static::getActivityManager();
     }
@@ -73,7 +73,7 @@ class ActivityManager extends DataBase {
      * Getter for the singleton.
      * @return ActivityManager
      */
-    static public function getActivityManager() {
+    static public function getActivityManager(): ActivityManager {
         return static::$activityManager;
     }
     
@@ -86,7 +86,7 @@ class ActivityManager extends DataBase {
      * @param \runnerupweb\common\Activity $activity
      * @param string $username The username 
      */
-    protected function create(\PDO $db, Activity $activity, $username) {
+    protected function create(\PDO $db, Activity $activity, string $username): string {
         $stmt = $db->prepare("INSERT INTO activity(login, startTime, sport, totalTimeSeconds, distanceMeters, "
                 . "maximumSpeed, calories, averageHeartRateBpm, maximumHeartRateBpm, notes, filename) "
                 . "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -110,7 +110,8 @@ class ActivityManager extends DataBase {
      * @param string $file The file containing the TCX file uploaded.
      * @param string $filename The filename as sent by the application
      */
-    public function storeActivities($username, $file, $filename) {
+    public function storeActivities(string $username, string $file, string $filename): array {
+        $tm = TagManager::getTagManager();
         $db = $this->getConnection();
         try {
             // first parse the TCX file in order to get all the activities inside it
@@ -127,6 +128,7 @@ class ActivityManager extends DataBase {
                 $activity->setFilename($filename);
                 $id = $this->create($db, $activity, $username);
                 $activity->setId($id);
+                $tm->calculateAutomaticTagsInTransaction($db, $username, $activity, false);
                 $tcx->store($username, $activity->getId(), $files[$i++]);
             }
             // remove the temporary files if it is the case
@@ -148,9 +150,9 @@ class ActivityManager extends DataBase {
      * 
      * @param string $username The username
      * @param string $id The id 
-     * @return Activity The activity associated to the username and id
+     * @return Activity|null The activity associated to the username and id
      */
-    public function getActivity($username, $id) {
+    public function getActivity(string $username, int $id): ?Activity {
         $db = $this->getConnection();
         $activity = null;
         try {
@@ -168,17 +170,57 @@ class ActivityManager extends DataBase {
             throw $ex;
         }
     }
+
+    /**
+     * Re-read the gzip file an re-parse all the activity from the file.
+     * @param string $username
+     * @param int id The activity id
+     * @return Activty|null
+     */
+    public function getActivityFromFile(string $username, int $id): ?Activity {
+        $tcx = TCXManager::getTCXManager();
+        $file = $this->getActivityFile($username, $id);
+        $activity = $this->getActivity($username, $id);
+        if (is_null($activity) || is_null($file)) {
+            return null;
+        }
+        $xml = file_get_contents('compress.zlib://' . $file);
+        $activities = $tcx->parseString($xml);
+        if (count($activities) !== 1) {
+            return null;
+        }
+        $activity->setLaps($activities[0]->getLaps());
+        return $activity;
+    }
+
+    /**
+     * Recalculate the tags re-parsing the activity and applying the automatic
+     * tags.
+     * @param string $username
+     * @param int $id The activity
+     * @param bool $delete Remove unassigned tags
+     * @return bool true when modified
+     */
+    public function recalculateTagsInActivity(string $username, int $id, bool $delete): bool {
+        $activity = $this->getActivityFromFile($username, $id);
+        if (is_null($activity)) {
+            return false;
+        }
+        $tm = TagManager::getTagManager();
+        $tm->calculateAutomaticTags($username, $activity, $delete);
+        return true;
+    }
     
     /**
      * Method that returns the file associated a username and an activity id.
      * It just calls to the TCXManager but is put here to do all the operation 
      * through the ActivityManager.
      * 
-     * @param type $username The username
-     * @param type $id The id of the file
+     * @param string $username The username
+     * @param int $id The id of the file
      * @return string The file or null
      */
-    public function getActivityFile($username, $id) {
+    public function getActivityFile(string $username, int $id): ?string {
         $tcx = TCXManager::getTCXManager();
         return $tcx->get($username, $id);
     }
@@ -187,11 +229,11 @@ class ActivityManager extends DataBase {
      * Method that removes the row of the entity in the database and the
      * associated activity file.
      * 
-     * @param type $username
-     * @param type $id
+     * @param string $username
+     * @param int $id
      * @return boolean true if deleted one row, false otherwise
      */
-    public function deleteActivity($username, $id) {
+    public function deleteActivity(string $username, int $id): bool {
         $db = $this->getConnection();
         try {
             $stmt = $db->prepare("DELETE FROM activity WHERE id = ? AND login = ?");
@@ -214,10 +256,10 @@ class ActivityManager extends DataBase {
      * where the activities are stored.
      * 
      * @param string $username
-     * @return void
+     * @return bool true if more than one deleted
      * @throws \runnerupweb\common\Exception
      */
-    public function deleteUserActivities($username) {
+    public function deleteUserActivities(string $username): bool {
         $db = $this->getConnection();
         try {
             $stmt = $db->prepare("DELETE FROM activity WHERE login = ?");
@@ -226,7 +268,7 @@ class ActivityManager extends DataBase {
             $tcx = TCXManager::getTCXManager();
             $tcx->deleteUserActivities($username);
             $db->commit();
-            return $stmt->rowCount() === 1;
+            return $stmt->rowCount() > 0;
         } catch (Exception $ex) {
             Logging::error("Error deleting activity", array($ex));
             $db->rollback();
@@ -241,26 +283,39 @@ class ActivityManager extends DataBase {
      * @param string $username The username to search
      * @param \DateTime $start Compulsory to filter activities after this date
      * @param \DateTime $end Optional, to filter activities before this date
+     * @param string tag The tag to search
      * @param int $offset for paged searches (default to 0)
      * @param int $limit for pages searches (default to 0 => transformed to maxrows)
      * @return Activity[] an array of activities found between dates
      */
-    public function searchActivities($username, \DateTime $start, \DateTime $end = null,
-            $offset = null, $limit = null) {
+    public function searchActivities(string $username, \DateTime $start, ?\DateTime $end = null,
+            ?string $tag = null, ?int $offset = null, ?int $limit = null): array {
         Logging::debug("searchActivityes $username $offset $limit");
         $limit = ($limit == null)? $this->maxrows : $limit;
         $offset = ($offset == null)? 0 : $offset;
         $res = [];
         $db = $this->getConnection();
         try {
-            $sql = "SELECT id, startTime, sport, totalTimeSeconds, distanceMeters, maximumSpeed, calories, "
-                . "averageHeartRateBpm, maximumHeartRateBpm, notes, filename FROM activity WHERE login = ? AND startTime > ?";
-            if ($end != null) {
-                $sql = $sql . " AND startTime < ?";
+            $sql = "SELECT activity.id as id, startTime, sport, totalTimeSeconds, distanceMeters, maximumSpeed, calories, "
+                . "averageHeartRateBpm, maximumHeartRateBpm, notes, filename";
+            $sql = $sql . " FROM activity";
+            if ($tag) {
+                $sql = $sql . " INNER JOIN tag ON activity.id = tag.id";
             }
-            $sql = $sql . " ORDER BY startTime DESC, id LIMIT ? OFFSET ?";
+            $sql = $sql . " WHERE activity.login = ? AND activity.startTime > ?";
+            if ($end) {
+                $sql = $sql . " AND activity.startTime < ?";
+            }
+            if ($tag) {
+                $sql = $sql . " AND tag.tag = ?";
+            }
+            $sql = $sql . " ORDER BY activity.startTime DESC, id LIMIT ? OFFSET ?";
             $stmt = $db->prepare($sql);
-            if ($end != null) {
+            if (isset($end) && isset($tag)) {
+                $stmt->execute([$username, $start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'), $tag, $limit, $offset]);
+            } else if (isset($tag)) {
+                $stmt->execute([$username, $start->format('Y-m-d H:i:s'), $tag, $limit, $offset]);
+            } else if (isset($end)) {
                 $stmt->execute([$username, $start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'), $limit, $offset]);
             } else {
                 $stmt->execute([$username, $start->format('Y-m-d H:i:s'), $limit, $offset]);

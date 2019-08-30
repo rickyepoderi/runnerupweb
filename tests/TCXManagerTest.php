@@ -22,6 +22,7 @@ require_once __DIR__ . '/../data/Activity.php';
 require_once __DIR__ . '/../data/ActivityLap.php';
 
 use runnerupweb\common\TCXManager;
+use runnerupweb\common\Logging;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,15 +32,16 @@ use PHPUnit\Framework\TestCase;
  */
 class TCXManagerTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
+        Logging::initForceLogger("/tmp");
         TCXManager::initTCXManager("/tmp", 100, false);
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         // noop
     }
     
-    public function testParse() {
+    public function testParse(): void {
         $tcx = TCXManager::getTCXManager();
         $activities = $tcx->parse(__DIR__ . '/test1.xml');
         $this->assertEquals(sizeof($activities), 1);
@@ -55,7 +57,7 @@ class TCXManagerTest extends TestCase {
         $this->assertEquals($activity->getMaximumHeartRateBpm(), 90);
     }
     
-    public function testSplit() {
+    public function testSplit(): void {
         $tcx = TCXManager::getTCXManager();
         $files = $tcx->split(__DIR__ . '/test1.xml');
         $this->assertEquals(sizeof($files), 1);
@@ -74,7 +76,7 @@ class TCXManagerTest extends TestCase {
         $this->assertTrue(unlink($files[0]));
     }
     
-    public function testStorage() {
+    public function testStorage(): void {
         $tcx = TCXManager::getTCXManager();
         copy(__DIR__ . '/test1.xml', "/tmp/1.xml");
         $tcx->store("ricky", 1, "/tmp/1.xml");
@@ -83,6 +85,21 @@ class TCXManagerTest extends TestCase {
         $this->assertNull($tcx->get("ricky", 1));
         $this->assertTrue(rmdir("/tmp/ricky/001"));
         $this->assertTrue(rmdir("/tmp/ricky"));
+    }
+
+    public function testParse2(): void {
+        $tcx = TCXManager::getTCXManager();
+        $activities = $tcx->parse(__DIR__ . '/runnerup.tcx');
+        $this->assertEquals(count($activities), 1);
+        $this->assertEquals(3, count($activities[0]->getLaps()));
+        $this->assertEquals(801, count($activities[0]->getLaps()[0]->getTrackpoints()));
+        $this->assertEquals(792, count($activities[0]->getLaps()[1]->getTrackpoints()));
+        $this->assertEquals(181, count($activities[0]->getLaps()[2]->getTrackpoints()));
+        $this->assertNotNull($activities[0]->getLaps()[0]->getTrackpoints()[0]->getTime());
+        $this->assertNotNull($activities[0]->getLaps()[0]->getTrackpoints()[0]->getLatitude());
+        $this->assertNotNull($activities[0]->getLaps()[0]->getTrackpoints()[0]->getLongitude());
+        $this->assertNotNull($activities[0]->getLaps()[0]->getTrackpoints()[0]->getAltitude());
+        $this->assertNotNull($activities[0]->getLaps()[0]->getTrackpoints()[0]->getHeartRate());
     }
     
 }

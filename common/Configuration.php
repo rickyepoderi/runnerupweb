@@ -78,9 +78,9 @@ class Configuration {
     }
     
     private function __construct() {
-        $this->config = parse_ini_file("config.ini", true);
+        $this->config = parse_ini_file(__DIR__ . "/config.ini", true);
         // init all the singletons in the application
-        Logging::initLogger($this->config['logging']['directory'], 
+        Logging::initLogger($this->config['logging']['directory'],
                 $this->config['logging']['level']);
         TCXManager::initTCXManager($this->config['store']['directory'], 
                 $this->config['store']['subdirs'], 
@@ -94,6 +94,10 @@ class Configuration {
                 $this->config['database']['password'],
                 $this->config['database']['maxrows']);
         UserOptionManager::initUserOptionManager($this->config['database']['url'], 
+                $this->config['database']['username'],
+                $this->config['database']['password'],
+                $this->config['database']['maxrows']);
+        TagManager::initTagManager($this->config['database']['url'],
                 $this->config['database']['username'],
                 $this->config['database']['password'],
                 $this->config['database']['maxrows']);

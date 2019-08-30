@@ -20,6 +20,7 @@
 namespace runnerupweb\common;
 
 use runnerupweb\data\LoginResponse;
+use runnerupweb\data\User;
 use runnerupweb\common\Logging;
 use runnerupweb\common\UserManager;
 
@@ -190,4 +191,139 @@ class WebUtils {
     public static function getOptionalLogin($name, $errorCode = 1) {
         return WebUtils::getRegExp($name, '/^[a-zA-Z0-9_\-\.]*$/', false, $errorCode);
     }
+
+    private static function getString($name, $compulsory, $errorCode = 1, $maxLength = 128) {
+        $var = filter_input(INPUT_GET, $name);
+        if ((is_null($var) || $var === '') && $compulsory) {
+            Logging::warning("'$name' parameter is compulsory");
+            exit(json_encode(LoginResponse::responseKo($errorCode,
+                    "runnerupweb.string.missing"), JSON_PRETTY_PRINT));
+        } else if ((is_null($var) || $var === '') && !$compulsory) {
+            return null;
+        } else if (strlen($var) > $maxLength) {
+            Logging::warning("'$name' parameter is too long");
+            exit(json_encode(LoginResponse::responseKo($errorCode,
+                    "runnerupweb.string.long"), JSON_PRETTY_PRINT));
+        } else {
+            return $var;
+        }
+    }
+
+    /**
+     * Method that checks if a string parameter is sent.
+     * @param type $name The name of the parameter
+     * @param type $errorCode The error code
+     * @param type $maxLength Max length of the string
+     */
+    public static function getCompulsoryString($name, $errorCode = 1, $maxLength = 128) {
+        return WebUtils::getString($name, true, $errorCode, $maxLength);
+    }
+
+    /**
+     * Method that checks if a string parameter is sent.
+     * @param type $name
+     * @param type $errorCode
+     * @param type $maxLength
+     * @return type
+     */
+    public static function getOptionalString($name, $errorCode = 1, $maxLength = 128) {
+        return WebUtils::getString($name, false, $errorCode, $maxLength);
+    }
+
+    private static function getStringInValues($name, $values, $compulsory, $errorCode = 1) {
+        $var = filter_input(INPUT_GET, $name);
+        if (is_null($var) && $compulsory) {
+            Logging::warning("'$name' parameter is compulsory");
+            exit(json_encode(LoginResponse::responseKo($errorCode,
+                    "runnerupweb.string.missing"), JSON_PRETTY_PRINT));
+        } else if (is_null($var) && !$compulsory) {
+            return null;
+        } else if (!in_array($var, $values, true)) {
+            Logging::warning("'$name' parameter not values " . implode(" ", $values));
+            exit(json_encode(LoginResponse::responseKo($errorCode,
+                    "runnerupweb.string.not.in.values"), JSON_PRETTY_PRINT));
+        } else {
+            return $var;
+        }
+    }
+
+    /**
+     * Method that checks if a string parameter is sent.
+     * @param type $name The name of the parameter
+     * @param type $values The correct values
+     * @param type $errorCode The error code
+     */
+    public static function getCompulsoryStringInValues($name, $values, $errorCode = 1) {
+        return  WebUtils::getStringInValues($name, $values, true, $errorCode);
+    }
+
+    /**
+     *
+     * @param type $name
+     * @param type $errorCode
+     * @return type
+     */
+    public static function getBooleanDefaultFalse($name, $errorCode = 1) {
+        return filter_var(WebUtils::getOptionalString($name), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Check the session is OK and the user is logged in.
+     * 
+     * @param bool|null $addJsonHeader
+     * @return User|null
+     */
+    public static function checkUserSession(string $validMethod, ?bool $addJsonHeader = true): ?User {
+        // add a header protection for everything
+        header("Content-Security-Policy: default-src 'self'");
+        // check the method is OK
+        if ($validMethod !== $_SERVER['REQUEST_METHOD']) {
+            header(filter_input(INPUT_SERVER, 'SERVER_PROTOCOL') . ' 405 Method Not Allowed');
+            exit;
+        }
+        // init the configuration
+        $config = Configuration::getConfiguration();
+        // start the session
+        session_start();
+        if (session_status() != PHP_SESSION_ACTIVE || !array_key_exists('login', $_SESSION) || !($_SESSION['login'] instanceof User) || $_SESSION['login']->getLogin() == null) {
+            // user not authenticated => 403
+            Logging::debug("User not authenticated!");
+            header(filter_input(INPUT_SERVER, 'SERVER_PROTOCOL') . ' 403 Forbidden');
+            exit;
+        } else {
+            // check activity
+            if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] > $config->getProperty('web', 'session.timeout'))) {
+                Logging::debug("Session expired for " . $_SESSION['login']->getLogin());
+                session_unset();     // unset $_SESSION variable for the run-time
+                session_destroy();   // destroy session data in storage
+                header(filter_input(INPUT_SERVER, 'SERVER_PROTOCOL') . ' 403 Forbidden');
+                exit;
+            } else {
+                // refresh and put a variable with the user
+                $_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
+                if ($addJsonHeader) {
+                    header('Content-type: application/json');
+                }
+                return $_SESSION['login'];
+            }
+        }
+    }
+
+    /**
+     * Check the session is OK for an admin.
+     * @param string $validMethod
+     * @param bool|null $addJsonHeader
+     * @return User|null
+     */
+    public static function checkAdminSession(string $validMethod, ?bool $addJsonHeader = true): ?User {
+        $user = WebUtils::checkUserSession($validMethod);
+        if ($user->getRole() !== 'ADMIN') {
+            // user not admin => 403
+            Logging::debug("User is not an admin!");
+            header(filter_input(INPUT_SERVER, 'SERVER_PROTOCOL') . ' 403 Forbidden');
+            exit;
+        }
+        return $user;
+    }
+
 }

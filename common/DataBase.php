@@ -32,7 +32,7 @@ abstract class DataBase {
     protected $password;
     protected $maxrows;
     
-    protected function __construct($url, $username, $password, $maxrows) {
+    protected function __construct(string $url, string $username, string $password, int $maxrows) {
         $this->url = $url;
         $this->username = $username;
         $this->password = $password;
@@ -40,7 +40,7 @@ abstract class DataBase {
     }
     
     protected function getConnection() {
-        $db = new \PDO($this->url, $this->username, $this->password);
+        $db = new \PDO($this->url, $this->username, $this->password, array(\PDO::MYSQL_ATTR_FOUND_ROWS => true));
         $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $db->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
         $db->setAttribute(\PDO::ATTR_PERSISTENT, true);
@@ -54,7 +54,7 @@ abstract class DataBase {
      * 
      * @return int the number of rows to retrieve at maximum
      */
-    public function getMaxRows() {
+    public function getMaxRows(): int {
         return $this->maxrows;
     }
     

@@ -11,18 +11,31 @@ class WorkoutCommand {
     public function __construct() { 
     }
 
-    public function usage($error) {
+    public function usage(?string $error): void {
         fwrite(STDERR, "$error\n");
         fwrite(STDERR, "USAGE: workout.php OPERATION OPTIONS\n");
         fwrite(STDERR, "OPERATION:\n");
         fwrite(STDERR, " - upload: uploads a file\n");
         fwrite(STDERR, " - search: seaches for workouts\n");
+        fwrite(STDERR, " - calculate: calculate tags over actvities\n");
         fwrite(STDERR, " - help: show help for the command or operation\n");
         fwrite(STDERR, "Use help OPERATION for specific help of the operation\n");
         die(1);
     }
 
-    public function usageUpload($error) {
+    public function usageCalculate(?string $error): void {
+        fwrite(STDERR, "$error\n");
+        fwrite(STDERR, "USAGE: workout.php calculate OPTIONS\n");
+        fwrite(STDERR, "OPTIONS:\n");
+        fwrite(STDERR, " -l --login LOGIN: username to login\n");
+        fwrite(STDERR, " -p --password PASSWORD: password for the login\n");
+        fwrite(STDERR, " -u --url URL: url to connect (default 'http://localhost/runnerupweb')\n");
+        fwrite(STDERR, " -a --activitiy ID:  id activity to recalculate tags (can be multi, compulsory parameter)\n");
+        fwrite(STDERR, " -d --delete: delete tags calculated as not assigned\n");
+        die(1);
+    }
+
+    public function usageUpload(?string $error): void {
         fwrite(STDERR, "$error\n");
         fwrite(STDERR, "USAGE: workout.php upload OPTIONS FILE...\n");
         fwrite(STDERR, "OPTIONS:\n");
@@ -34,7 +47,7 @@ class WorkoutCommand {
         die(1);
     }
     
-    public function usageSearch($error) {
+    public function usageSearch(?string $error): void {
         fwrite(STDERR, "$error\n");
         fwrite(STDERR, "USAGE: workout.php upload OPTIONS FILE...\n");
         fwrite(STDERR, "OPTIONS:\n");
@@ -48,13 +61,13 @@ class WorkoutCommand {
         die(1);
     }
 
-    public function usageHelp($error) {
+    public function usageHelp(?string $error): void {
         fwrite(STDERR, "$error\n");
         fwrite(STDERR, "USAGE: workout.php help OPERATION...\n");
         die(1);
     }
 
-    public function parseAndExecuteHelp($argv) {
+    public function parseAndExecuteHelp(array $argv): void {
         if (count($argv) != 3) {
             $this->usage('Invalid number of arguments for help');
         }
@@ -70,7 +83,7 @@ class WorkoutCommand {
         }
     }
 
-    public function parseStringArgument($argv, $i) {
+    public function parseStringArgument(array $argv, int $i): ?string {
         if ($i + 1 < count($argv)) {
             return $argv[$i + 1];
         } else {
@@ -78,7 +91,7 @@ class WorkoutCommand {
         }
     }
     
-    public function parseDateArgument($argv, $i) {
+    public function parseDateArgument(array $argv, int $i): ?DateTime {
         if ($i + 1 < count($argv)) {
             $date = \DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $argv[$i+1], new \DateTimeZone('UTC'));
             if ($date) {
@@ -91,7 +104,7 @@ class WorkoutCommand {
         }
     }
     
-    public function parseIntArgument($argv, $i) {
+    public function parseIntArgument(array $argv, int $i): int {
         if ($i + 1 < count($argv)) {
             if (is_numeric($argv[$i + 1])) {
                 return intval($argv[$i + 1]);
@@ -103,7 +116,7 @@ class WorkoutCommand {
         }
     }
 
-    function promptSilent($prompt = "Password: ") {
+    function promptSilent(string $prompt = "Password: "): string {
         if (preg_match('/^win/i', PHP_OS)) {
             $vbscript = sys_get_temp_dir() . 'prompt_password.vbs';
             file_put_contents(
@@ -123,7 +136,8 @@ class WorkoutCommand {
         }
     }
 
-    public function executeUpload($url, $login, $password, $delete, $move, $files) {
+    public function executeUpload(string $url, string $login, string $password,
+            bool $delete, bool $move, array $files): void {
         $c = new Client($url);
         $r = $c->login($login, $password);
         if (!$r->isSuccess()) {
@@ -143,8 +157,28 @@ class WorkoutCommand {
           $c->logout();  
         }
     }
+
+    public function executeCalculate(string $url, string $login, string $password,
+            array $ids, bool $delete): void {
+        $c = new Client($url);
+        $r = $c->login($login, $password);
+        if (!$r->isSuccess()) {
+            die($r->getErrorMessage() . "\n");
+        }
+        try {
+            foreach($ids as $id) {
+                $r = $c->calculateAutomaticTags($id, $delete);
+                if (!$r->isSuccess()) {
+                    die("Error calculating tags for activity $id: " . $r->getErrorMessage() . "\n");
+                }
+            }
+        } finally {
+          $c->logout();
+        }
+    }
     
-    public function executeSearch($url, $login, $password, $start, $end, $offset, $limit) {
+    public function executeSearch(string $url, string $login, string $password,
+            ?DateTime $start, ?DateTime $end, ?int $offset, ?int $limit) {
         $c = new Client($url);
         $r = $c->login($login, $password);
         if (!$r->isSuccess()) {
@@ -165,7 +199,7 @@ class WorkoutCommand {
         }
     }
 
-    public function parseAndExecuteUpload($argv) {
+    public function parseAndExecuteUpload(array $argv): void {
         $login = false;
         $password = false;
         $url = 'http://localhost/runnerupweb';
@@ -229,17 +263,16 @@ class WorkoutCommand {
         $this->executeUpload($url, $login, $password, $delete, $move, $files);
     }
 
-    public function parseAndExecuteSearch($argv) {
+    public function parseAndExecuteSearch(array $argv): void {
         $login = false;
         $password = false;
         $url = 'http://localhost/runnerupweb';
-        $start = false;
-        $end = false;
-        $offset = false;
-        $limit = false;
-        $finish = false;
+        $start = null;
+        $end = null;
+        $offset = null;
+        $limit = null;
 
-        for ($i = 2; $i < count($argv) && !$finish; $i++) {
+        for ($i = 2; $i < count($argv); $i++) {
             switch ($argv[$i]) {
                 case "-l":
                 case "--login":
@@ -273,8 +306,7 @@ class WorkoutCommand {
                     $limit = $this->parseIntArgument($argv, $i++);
                     break;
                 default:
-                    $i--;
-                    $finish = true;
+                    $this->usageSearch("Invalid option " . $argv[$i]);
             }
         }
         if (!$start) {
@@ -282,8 +314,51 @@ class WorkoutCommand {
         }
         $this->executeSearch($url, $login, $password, $start, $end, $offset, $limit);
     }
+
+    public function parseAndExecuteCalculate(array $argv): void {
+        $login = false;
+        $password = false;
+        $url = 'http://localhost/runnerupweb';
+        $delete = false;
+        $ids = [];
+
+        for ($i = 2; $i < count($argv); $i++) {
+            switch ($argv[$i]) {
+                case "-l":
+                case "--login":
+                    $login = $this->parseStringArgument($argv, $i++);
+                    break;
+                case "-p":
+                case "--password":
+                    $password = $this->parseStringArgument($argv, $i++);
+                    break;
+                case "-u":
+                case "--url":
+                    $url = $this->parseStringArgument($argv, $i++);
+                    if (!parse_url($url)) {
+                        $this->usageUpload("Invalid url parameter: $url");
+                    }
+                    break;
+                case "-a":
+                case "--activity":
+                    $id = $this->parseIntArgument($argv, $i++);
+                    array_push($ids, $id);
+                    break;
+                case "-d":
+                case "--delete":
+                    $delete = true;
+                    break;
+                default:
+                    $this->usageSearch("Invalid option " . $argv[$i]);
+            }
+        }
+        if (count($ids) === 0) {
+            $this->usageCalculate('One or more activity IDs should be provided');
+        }
+        $this->executeCalculate($url, $login, $password, $ids, $delete);
+    }
     
-    public function parseAndExecute($argv) {
+    public function parseAndExecute(array $argv): void {
         if (count($argv) == 1) {
             $this->usage('Operation argument not provided');
         }
@@ -300,12 +375,16 @@ class WorkoutCommand {
                 $this->operation = 'search';
                 $this->parseAndExecuteSearch($argv);
                 break;
+            case 'calculate':
+                $this->operation = 'calculate';
+                $this->parseAndExecuteCalculate($argv);
+                break;
             default:
                 $this->usage("Invalid operation $argv[1]");
         }
     }
 
-    public function execute($argv) {
+    public function execute(array $argv): void {
         $this->parseAndExecute($argv);
     }
 }

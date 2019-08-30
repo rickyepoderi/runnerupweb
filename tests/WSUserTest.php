@@ -31,13 +31,13 @@ use PHPUnit\Framework\TestCase;
  */
 class WSUserTest extends TestCase {
     
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         Configuration::getConfiguration();
         $um = UserManager::getUserManager();
         $um->createUser(WSUserTest::createAdminUser());
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         $um = UserManager::getUserManager();
         $um->deleteUser(WSUserTest::createAdminUser()->getLogin());
     }
