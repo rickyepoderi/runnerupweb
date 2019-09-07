@@ -48,12 +48,12 @@ class RouteAutomaticTag implements AutomaticTag {
     private function foundLapAtDistance(Activity $activity, float $d): int {
         $ini = 0;
         $end = count($activity->getLaps()) - 1;
-        while ($ini >= 0 && $end < count($activity->getLaps())) {
-            $mid = ($ini + $end) / 2;
-            //Logging::debug("ini: $ini end: $end mid: $mid");
+        $mid = intval(($ini + $end) / 2);
+        while ($mid !== $ini && $mid !== $end) {
+            Logging::debug("ini: $ini end: $end mid: $mid");
             $firstPoint = $activity->getLaps()[$mid]->getTrackpoints()[0];
             $lastPoint = $activity->getLaps()[$mid]->getTrackpoints()[count($activity->getLaps()[$mid]->getTrackpoints()) - 1];
-            //Logging::debug("ini: " . $firstPoint->getDistance() . " end: " . $lastPoint->getDistance() . " d: $d");
+            Logging::debug("ini: " . $firstPoint->getDistance() . " end: " . $lastPoint->getDistance() . " d: $d");
             if ($d < $firstPoint->getDistance()) {
                 $end = $mid - 1;
             } else if ($d > $lastPoint->getDistance()) {
@@ -61,12 +61,9 @@ class RouteAutomaticTag implements AutomaticTag {
             } else {
                 return $mid;
             }
+            $mid = intval(($ini + $end) / 2);
         }
-        if ($ini < 0) {
-            return 0;
-        } else {
-            return count($activity->getLaps());
-        }
+        return $mid;
     }
 
     private function foundTrackpointAtDistanceInLap(ActivityLap $lap, float $d): int {
@@ -79,7 +76,7 @@ class RouteAutomaticTag implements AutomaticTag {
         } else {
             $mid = intval(($ini + $end) / 2);
             while ($ini < $end && $ini !== $mid) {
-                //Logging::debug("ini: $ini end: $end mid: $mid <" . ($ini < $end));
+                Logging::debug("ini: $ini end: $end mid: $mid <" . ($ini < $end));
                 if ($d < $lap->getTrackpoints()[$mid]->getDistance()) {
                     $end = $mid;
                 } else {
@@ -93,7 +90,9 @@ class RouteAutomaticTag implements AutomaticTag {
 
     private function foundTrackpointAtDistance(Activity $activity, float $d): ?ActivityTrackpoint {
         $lap = $this->foundLapAtDistance($activity, $d);
+        Logging::debug("Found lap=$lap");
         $track = $this->foundTrackpointAtDistanceInLap($activity->getLaps()[$lap], $d);
+        Logging::debug("Found track=$track");
         return $activity->getLaps()[$lap]->getTrackpoints()[$track];
     }
 

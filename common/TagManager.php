@@ -255,6 +255,7 @@ class TagManager extends DataBase {
         $tags = [];
         foreach ($tagConfigs as $tagConfig) {
             $provider = $tagConfig->getProvider();
+            Logging::debug("Calculating provider $provider");
             $autoTag = new $provider();
             if ($autoTag->isAssignable($activity, $tagConfig)) {
                 array_push($tags, $tagConfig->getTag());
