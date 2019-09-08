@@ -49,7 +49,7 @@ class RouteAutomaticTag implements AutomaticTag {
         $ini = 0;
         $end = count($activity->getLaps()) - 1;
         $mid = intval(($ini + $end) / 2);
-        while ($mid !== $ini && $mid !== $end) {
+        do {
             Logging::debug("ini: $ini end: $end mid: $mid");
             $firstPoint = $activity->getLaps()[$mid]->getTrackpoints()[0];
             $lastPoint = $activity->getLaps()[$mid]->getTrackpoints()[count($activity->getLaps()[$mid]->getTrackpoints()) - 1];
@@ -62,29 +62,28 @@ class RouteAutomaticTag implements AutomaticTag {
                 return $mid;
             }
             $mid = intval(($ini + $end) / 2);
-        }
+        } while ($ini < $end);
         return $mid;
     }
 
     private function foundTrackpointAtDistanceInLap(ActivityLap $lap, float $d): int {
         $ini = 0;
         $end = count($lap->getTrackpoints()) - 1;
-        if ($d < $lap->getTrackpoints()[$ini]->getDistance()) {
-            return $ini;
-        } else if ($d > $lap->getTrackpoints()[$end]->getDistance()) {
-            return $end;
-        } else {
-            $mid = intval(($ini + $end) / 2);
-            while ($ini < $end && $ini !== $mid) {
-                Logging::debug("ini: $ini end: $end mid: $mid <" . ($ini < $end));
-                if ($d < $lap->getTrackpoints()[$mid]->getDistance()) {
-                    $end = $mid;
-                } else {
-                    $ini = $mid;
-                }
-                $mid = intval(($ini + $end) / 2);
+        $mid = intval(($ini + $end) / 2);
+        do {
+            Logging::debug("ini: $ini end: $end mid: $mid <" . ($ini < $end));
+            if ($d < $lap->getTrackpoints()[$mid]->getDistance()) {
+                $end = $mid;
+            } else {
+                $ini = $mid;
             }
+            $mid = intval(($ini + $end) / 2);
+        } while ($ini + 1 < $end);
+        // get the point nearer to d, ini or end
+        if (abs($d - $lap->getTrackpoints()[$ini]->getDistance()) < abs($d - $lap->getTrackpoints()[$end]->getDistance())) {
             return $ini;
+        } else {
+            return $end;
         }
     }
 
