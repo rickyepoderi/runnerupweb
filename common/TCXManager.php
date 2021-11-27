@@ -159,7 +159,12 @@ class TCXManager {
     private function parseTrack(\XMLReader $reader, ActivityLap $lap): void {
         if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Track') {
             Logging::debug("parseTrack starting...");
-            $continue = $reader->read();
+            if ($reader->isEmptyElement) {
+                $continue = false;
+                $reader->read();
+            } else {
+                $continue = $reader->read();
+            }
             while ($continue) {
                 $readnext = true;
                 if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'Trackpoint') {
