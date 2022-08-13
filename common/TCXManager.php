@@ -161,7 +161,6 @@ class TCXManager {
             Logging::debug("parseTrack starting...");
             if ($reader->isEmptyElement) {
                 $continue = false;
-                $reader->read();
             } else {
                 $continue = $reader->read();
             }
