@@ -92,10 +92,15 @@ class LocationAutomaticTag implements AutomaticTag {
             return false;
         }
         $point1 = json_decode($tagConfig->getConfig(), true);
-        $point2 = $activity->getLaps()[0]->getTrackpoints()[0];
-        $d = RouteAutomaticTag::calculatedistance(floatval($point1['lat']), floatval($point1['lon']),
-                $point2->getLatitude(), $point2->getLongitude());
-        return $d < floatval($point1['d']);
+        if (is_array($activity->getLaps()) &&
+                is_array($activity->getLaps()[0]->getTrackpoints()) &&
+                count($activity->getLaps()[0]->getTrackpoints()) > 0) {
+            $point2 = $activity->getLaps()[0]->getTrackpoints()[0];
+            $d = RouteAutomaticTag::calculatedistance(floatval($point1['lat']), floatval($point1['lon']),
+                    $point2->getLatitude(), $point2->getLongitude());
+            return $d < floatval($point1['d']);
+        }
+        return false;
     }
 
 }
